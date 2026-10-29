@@ -46,6 +46,19 @@ internal static class ValueConverter
 			return ConvertCore(converters, value, underlying);
 		}
 
+		if (value is Stream stream)
+		{
+			if (targetType == typeof(byte[]))
+			{
+				return Utils.StreamToByteArray(stream);
+			}
+
+			if (targetType == typeof(string))
+			{
+				return Utils.StreamToString(stream);
+			}
+		}
+
 		if (targetType == typeof(string))
 		{
 			return value is byte[] bytes ? Convert.ToBase64String(bytes) : Convert.ToString(value, CultureInfo.InvariantCulture);

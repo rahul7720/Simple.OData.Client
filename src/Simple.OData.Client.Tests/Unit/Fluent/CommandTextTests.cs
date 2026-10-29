@@ -281,6 +281,19 @@ public sealed class CommandTextTests
 		(await Client.Unbound().Function("PassThroughIntCollection").Set(new Dictionary<string, object?> { ["numbers"] = new[] { 1, 2, 3 } }).GetCommandTextAsync())
 			.Should().Be("PassThroughIntCollection(numbers=@p1)?@p1=[1,2,3]");
 
+	[Fact]
+	public async Task UnboundFunctionWithComplexParameterAsDictionary() =>
+		(await Client.Unbound().Function("PassThroughAddress").Set(new Dictionary<string, object?> { ["address"] = new Dictionary<string, object?> { ["City"] = "Oslo", ["Country"] = "Norway" } }).GetCommandTextAsync())
+			.Should().Be("PassThroughAddress(address=@p1)?@p1=%7B%22City%22%3A%22Oslo%22%2C%22Country%22%3A%22Norway%22%7D", because: "complex parameters travel as a JSON parameter alias");
+
+	[Fact]
+	public async Task UnboundFunctionWithComplexParameterAsObject()
+	{
+		var text = await Client.Unbound().Function("PassThroughAddress").Set(new { address = new Address { City = "Oslo", Country = "Norway", Type = AddressType.Corporate } }).GetCommandTextAsync();
+		text.Should().StartWith("PassThroughAddress(address=@p1)?@p1=%7B%22%40odata.type%22%3A%22%23NorthwindModel.Address%22");
+		text.Should().Contain("%22City%22%3A%22Oslo%22").And.Contain("%22Type%22%3A%22Corporate%22");
+	}
+
 	// ---- dynamic filter as key -------------------------------------------------------------------------------
 
 	[Fact]

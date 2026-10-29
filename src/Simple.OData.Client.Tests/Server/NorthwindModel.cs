@@ -82,6 +82,8 @@ public class Picture
 {
 	public int Id { get; set; }
 	public string? Name { get; set; }
+	public byte[]? Media { get; set; }
+	public string? Content { get; set; }
 }
 
 [Table("Order_Details")]

@@ -187,6 +187,12 @@ internal sealed class CommandUriBuilder(Session session) : IUriValueFormatter
 				queryClauses.Add($"{alias}=[{string.Join(',', literals)}]");
 				path.Append(alias);
 			}
+			else if (UriLiteralFormatter.IsStructuredValue(value))
+			{
+				var alias = "@p" + (++aliasIndex).ToString(CultureInfo.InvariantCulture);
+				queryClauses.Add($"{alias}={Uri.EscapeDataString(UriLiteralFormatter.FormatJson(session, value!))}");
+				path.Append(alias);
+			}
 			else
 			{
 				path.Append(ConvertValueToUriLiteral(value, true));

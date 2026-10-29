@@ -50,6 +50,22 @@ public class ValueConversionTests
 	}
 
 	[Fact]
+	public void TryConvert_StreamToByteArray()
+	{
+		using var stream = new MemoryStream("abc"u8.ToArray());
+		_typeCache.TryConvert(stream, typeof(byte[]), out var result).Should().BeTrue();
+		result.Should().BeOfType<byte[]>().Which.Should().Equal("abc"u8.ToArray());
+	}
+
+	[Fact]
+	public void TryConvert_StreamToString()
+	{
+		using var stream = new MemoryStream("abc"u8.ToArray());
+		_typeCache.TryConvert(stream, typeof(string), out var result).Should().BeTrue();
+		result.Should().Be("abc");
+	}
+
+	[Fact]
 	public void TryConvert_SameTypeIsReturnedAsIs()
 	{
 		var source = GeographyPoint.Create(10, 10);
