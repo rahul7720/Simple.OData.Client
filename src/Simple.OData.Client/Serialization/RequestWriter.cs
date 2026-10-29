@@ -77,6 +77,12 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		}
 
 		await stream.CopyToAsync(target).ConfigureAwait(false);
+		if (IsBatch)
+		{
+			// the batch writer accepts the next operation only once this operation's stream is closed
+			await target.DisposeAsync().ConfigureAwait(false);
+		}
+
 		var content = (message as ODataRequestMessage)?.TakeContent();
 		return WithPreferences(new ODataRequest(RestVerbs.Put, session, commandText, null, content, contentType, headers) { CheckOptimisticConcurrency = optimisticConcurrency });
 	}
@@ -141,7 +147,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		var message = IsBatch
 			? await CreateBatchOperationMessageAsync(method, null, null, commandText, false).ConfigureAwait(false)
 			: new ODataRequestMessage();
-		using (var messageWriter = new ODataMessageWriter(message, ODataLibSettings.CreateWriterSettings(session), Model))
+		using (var messageWriter = new ODataMessageWriter(message, WriterSettings(), Model))
 		{
 			var link = new ODataEntityReferenceLink { Url = Utils.CreateAbsoluteUri(session.BaseUri, linkIdent) };
 			await messageWriter.WriteEntityReferenceLinkAsync(link).ConfigureAwait(false);
@@ -191,7 +197,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		if (parameters is { Count: > 0 })
 		{
 			var action = FindAction(actionName, boundTypeName);
-			using (var messageWriter = new ODataMessageWriter(message, ODataLibSettings.CreateWriterSettings(session), Model))
+			using (var messageWriter = new ODataMessageWriter(message, WriterSettings(), Model))
 			{
 				var parameterWriter = await messageWriter.CreateODataParameterWriterAsync(action).ConfigureAwait(false);
 				await parameterWriter.WriteStartAsync().ConfigureAwait(false);
@@ -222,7 +228,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 
 		var entityType = Metadata.GetEntityType(collection);
 		var node = CreateEntryNode(entityType.FullName(), entityType, entryData);
-		using (var messageWriter = new ODataMessageWriter(message, ODataLibSettings.CreateWriterSettings(session), Model))
+		using (var messageWriter = new ODataMessageWriter(message, WriterSettings(), Model))
 		{
 			var writer = await messageWriter.CreateODataResourceWriterAsync().ConfigureAwait(false);
 			await WriteEntryAsync(writer, node, method).ConfigureAwait(false);
@@ -332,7 +338,8 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		var contentId = batchWriter?.Value.GetContentId(data, value);
 		if (contentId is not null)
 		{
-			return new LinkedEntity(data, Utils.CreateAbsoluteUri(session.BaseUri, "$" + contentId));
+			// a reference to an earlier operation of the same batch: "$<Content-ID>", always relative
+			return new LinkedEntity(data, new Uri("$" + contentId, UriKind.Relative));
 		}
 
 		if (TryGetAnnotation(data, ReservedNames.ODataId, ReservedNames.ODataIdShort) is string id)
@@ -649,6 +656,14 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 
 	private async Task<IODataRequestMessage> CreateBatchOperationMessageAsync(string method, string? collection, IDictionary<string, object?>? entryData, string commandText, bool resultRequired) =>
 		await batchWriter!.Value.CreateOperationMessageAsync(Utils.CreateAbsoluteUri(session.BaseUri, commandText), method, collection, entryData, resultRequired).ConfigureAwait(false);
+
+	/// <summary>In batch mode ODataLib must dispose each operation's stream before the batch writer accepts the next one.</summary>
+	private ODataMessageWriterSettings WriterSettings()
+	{
+		var settings = ODataLibSettings.CreateWriterSettings(session);
+		settings.EnableMessageStreamDisposal = IsBatch;
+		return settings;
+	}
 
 	private static ODataRequest WithPreferences(ODataRequest request)
 	{

@@ -19,7 +19,6 @@ internal static class ODataLibSettings
 		{
 			Version = Version(session),
 			BaseUri = session.BaseUri,
-			ODataUri = new ODataUri { ServiceRoot = session.BaseUri },
 			Validations = ToODataLib(session.Settings.Validations),
 			EnableMessageStreamDisposal = false,
 		};

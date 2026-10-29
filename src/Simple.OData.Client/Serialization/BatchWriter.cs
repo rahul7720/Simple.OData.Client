@@ -24,9 +24,11 @@ internal sealed class BatchWriter(Session session, ConcurrentDictionary<object, 
 	public async Task StartBatchAsync()
 	{
 		_requestMessage = new ODataRequestMessage { Url = session.BaseUri, Method = RestVerbs.Post };
-		var settings = new ODataMessageWriterSettings { BaseUri = session.BaseUri, Version = ODataLibSettings.Version(session) };
-		if (session.Settings.BatchFormat == BatchFormat.Json)
+		var settings = new ODataMessageWriterSettings { BaseUri = session.BaseUri, Version = ODataLibSettings.Version(session), EnableMessageStreamDisposal = false };
+		if (IsJson)
 		{
+			// JSON batch is an OData 4.01 format
+			settings.Version = ODataVersion.V401;
 			settings.SetContentType(ODataFormat.Json);
 		}
 
@@ -57,8 +59,56 @@ internal sealed class BatchWriter(Session session, ConcurrentDictionary<object, 
 		var content = new StreamContent(stream);
 		content.Headers.ContentType = MediaTypeHeaderValue.Parse(_requestMessage.GetHeader(HttpLiteral.ContentType) ?? HttpLiteral.MultipartMixed);
 		content.Headers.ContentLength = stream.Length;
-		return new HttpRequestMessage(HttpMethod.Post, Utils.CreateAbsoluteUri(session.BaseUri, ODataLiteral.Batch)) { Content = content };
+		var request = new HttpRequestMessage(HttpMethod.Post, Utils.CreateAbsoluteUri(session.BaseUri, ODataLiteral.Batch)) { Content = content };
+		if (IsJson)
+		{
+			request.Headers.TryAddWithoutValidation(HttpLiteral.ODataVersion, "4.01");
+		}
+
+		return request;
 	}
+
+	/// <summary>
+	/// Runs the batch actions (each of which writes its operation through a batch-mode <see cref="RequestWriter"/>),
+	/// records for every action the index of the operation response it produced (or -1), and returns the
+	/// <c>$batch</c> request, or <see langword="null"/> when no action produced an operation.
+	/// </summary>
+	public async Task<ODataRequest?> CreateBatchRequestAsync(IReadOnlyList<Func<Task>> actions, List<int> responseIndexes, IDictionary<string, string>? headers)
+	{
+		ArgumentNullException.ThrowIfNull(actions);
+		ArgumentNullException.ThrowIfNull(responseIndexes);
+		var lastOperationId = 0;
+		foreach (var action in actions)
+		{
+			await action().ConfigureAwait(false);
+			var responseIndex = -1;
+			if (LastOperationId > lastOperationId)
+			{
+				lastOperationId = LastOperationId;
+				responseIndex = lastOperationId - 1;
+			}
+
+			responseIndexes.Add(responseIndex);
+		}
+
+		if (!HasOperations)
+		{
+			return null;
+		}
+
+		var message = await EndBatchAsync().ConfigureAwait(false);
+		if (headers is not null)
+		{
+			foreach (var (name, value) in headers)
+			{
+				message.Headers.TryAddWithoutValidation(name, value);
+			}
+		}
+
+		return new ODataRequest(RestVerbs.Post, session, ODataLiteral.Batch, message);
+	}
+
+	private bool IsJson => session.Settings.BatchFormat == BatchFormat.Json;
 
 	public string NextContentId() => (++LastOperationId).ToString(CultureInfo.InvariantCulture);
 
