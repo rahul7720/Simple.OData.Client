@@ -79,7 +79,34 @@ public sealed class ODataClientSettings
 	}
 
 	/// <summary>An external <see cref="System.Net.Http.HttpClient"/> to send requests with; it is not disposed by the client.</summary>
-	public HttpClient? HttpClient { get; }
+	public HttpClient? HttpClient { get; private set; }
+
+	/// <summary>Routes requests through <paramref name="httpClient"/>; used by the <c>ODataClient(HttpClient, ODataClientSettings)</c> constructor.</summary>
+	internal void AttachHttpClient(HttpClient httpClient)
+	{
+		ArgumentNullException.ThrowIfNull(httpClient);
+		if (ReferenceEquals(HttpClient, httpClient))
+		{
+			return;
+		}
+
+		if (HttpClient is not null)
+		{
+			throw new InvalidOperationException("The settings already use a different HttpClient.");
+		}
+
+		if (httpClient.BaseAddress is not null && !httpClient.BaseAddress.IsAbsoluteUri)
+		{
+			throw new ArgumentException("HttpClient BaseAddress must be an absolute URI", nameof(httpClient));
+		}
+
+		if (httpClient.BaseAddress is not null && _baseOrRelativeUri is { IsAbsoluteUri: true })
+		{
+			throw new InvalidOperationException("Unable to use an HttpClient with a BaseAddress when BaseUri is absolute.");
+		}
+
+		HttpClient = httpClient;
+	}
 
 	/// <summary>Credentials for the default message handler.</summary>
 	public ICredentials? Credentials { get; set; }

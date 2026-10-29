@@ -215,8 +215,7 @@ internal sealed class ResponseReader(Session session)
 			else if (operation.StatusCode >= (int)HttpStatusCode.BadRequest)
 			{
 				var error = await TryReadErrorAsync(operation).ConfigureAwait(false);
-				var reason = error?.Message ?? ((HttpStatusCode)operation.StatusCode).ToString();
-				var exception = new HttpRequestException($"Batch operation failed with status {operation.StatusCode}: {reason}", null, (HttpStatusCode)operation.StatusCode);
+				var exception = WebRequestException.CreateFromStatusCode((HttpStatusCode)operation.StatusCode, session.Settings.WebRequestExceptionMessageSource, null, error);
 				responses.Add(ODataResponse.FromError(TypeCache, operation.StatusCode, operationHeaders, error, exception));
 			}
 			else

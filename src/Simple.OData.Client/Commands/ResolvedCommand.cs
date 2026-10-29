@@ -105,6 +105,13 @@ public sealed class ResolvedCommand
 		return this;
 	}
 
+	/// <summary>Targets every member of the addressed collection (<c>/$each</c>, OData 4.01).</summary>
+	internal ResolvedCommand Each()
+	{
+		Details.UseEachSegment = true;
+		return this;
+	}
+
 	/// <summary>Formats the command as a relative request URL.</summary>
 	public string Format() => new CommandUriBuilder(_session).Format(this);
 

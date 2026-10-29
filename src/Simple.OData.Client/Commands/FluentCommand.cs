@@ -24,10 +24,11 @@ public sealed class FluentCommand
 		Details = new CommandDetails(details);
 	}
 
+	/// <summary>Creates a command from a resolved one; the filter expression has already been folded into its text or key.</summary>
 	internal FluentCommand(ResolvedCommand command)
 	{
 		ArgumentNullException.ThrowIfNull(command);
-		Details = new CommandDetails(command.Details);
+		Details = new CommandDetails(command.Details) { FilterExpression = null };
 	}
 
 	internal CommandDetails Details { get; }

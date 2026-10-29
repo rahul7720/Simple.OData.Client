@@ -20,4 +20,7 @@ internal static class MetadataClientFactory
 
 	public static Session CreateSession(string metadataResource, Action<ODataClientSettings>? configure = null, FakeHttpHandler? handler = null) =>
 		new(CreateSettings(metadataResource, configure, handler));
+
+	public static ODataClient CreateClient(string metadataResource, Action<ODataClientSettings>? configure = null, FakeHttpHandler? handler = null) =>
+		new(CreateSettings(metadataResource, configure, handler));
 }

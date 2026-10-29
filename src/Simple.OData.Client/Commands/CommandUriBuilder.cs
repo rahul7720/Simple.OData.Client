@@ -343,8 +343,10 @@ internal sealed class CommandUriBuilder(Session session) : IUriValueFormatter
 	{
 		if (rootLevel)
 		{
-			association = command.Details.SelectColumns.Aggregate(association, static (current, path) => MergeExpandAssociations(current, ODataExpandAssociation.From(path)));
-			association = command.Details.OrderByColumns.Aggregate(association, MergeOrderByColumns);
+			var root = command.Details.SelectColumns.Aggregate(association, static (current, path) => MergeExpandAssociations(current, ODataExpandAssociation.From(path)));
+			association = command.Details.OrderByColumns
+				.Where(column => IsInnerCollectionOrderBy(root.Name, collection, column.Name))
+				.Aggregate(root, MergeOrderByColumns);
 		}
 
 		var name = association.Name;
