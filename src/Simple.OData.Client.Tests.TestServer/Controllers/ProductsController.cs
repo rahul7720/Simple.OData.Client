@@ -14,7 +14,7 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get()
 	{
 		if (Request.Headers["Prefer"].Any(x => x?.Contains("odata.track-changes", StringComparison.OrdinalIgnoreCase) == true))
@@ -26,7 +26,7 @@ public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) :
 		return Ok(Data.Products.AsQueryable());
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var product = Find(key);
@@ -34,32 +34,45 @@ public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) :
 	}
 
 	[HttpGet("odata/Products(ProductName={name})")]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetByName(string name)
 	{
 		var product = Data.Products.FirstOrDefault(x => x.ProductName == name);
 		return product is null ? NotFound() : Ok(product);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetCategory(int key)
 	{
 		var product = Find(key);
 		return product is null ? NotFound() : Ok(SingleResult.Create(Data.Categories.Where(x => x.CategoryID == product.CategoryID).AsQueryable()));
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetSupplier(int key)
 	{
 		var product = Find(key);
 		return product is null ? NotFound() : Ok(SingleResult.Create(Data.Suppliers.Where(x => x.SupplierID == product.SupplierID).AsQueryable()));
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetOrder_Details(int key)
 	{
 		var product = Find(key);
 		return product is null ? NotFound() : Ok(Data.OrderDetails.Where(x => x.ProductID == key).AsQueryable());
+	}
+
+	/// <summary>Primitive property access: <c>Products(1)/ProductName</c> and <c>Products(1)/ProductName/$value</c>.</summary>
+	public IActionResult GetProductName(int key)
+	{
+		var product = Find(key);
+		return product is null ? NotFound() : Ok(product.ProductName);
+	}
+
+	public IActionResult GetUnitPrice(int key)
+	{
+		var product = Find(key);
+		return product is null ? NotFound() : Ok(product.UnitPrice);
 	}
 
 	public IActionResult Post([FromBody] Product product)
@@ -253,7 +266,7 @@ public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) :
 	}
 
 	[HttpGet]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Slow()
 	{
 		if (Request.Headers["Prefer"].Any(x => x?.Contains("respond-async", StringComparison.OrdinalIgnoreCase) == true))

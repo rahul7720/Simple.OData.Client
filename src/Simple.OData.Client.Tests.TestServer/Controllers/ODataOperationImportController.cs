@@ -2,6 +2,7 @@ using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Formatter;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -37,7 +38,7 @@ public class ODataOperationImportController(NorthwindData data) : NorthwindContr
 	public IActionResult ProductCount() => Ok(Data.Products.Count);
 
 	[HttpGet]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetProductsByRating([FromODataUri] int rating) => Ok(Data.Products.Where(x => (x.Rating ?? 0) >= rating).AsQueryable());
 
 	// ---- actions -----------------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ public class ODataOperationImportController(NorthwindData data) : NorthwindContr
 	}
 
 	[HttpPost]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult ListProducts(ODataActionParameters parameters)
 	{
 		var categoryId = Convert.ToInt32(parameters?["categoryId"], CultureInfo.InvariantCulture);
@@ -93,7 +94,7 @@ public class ODataOperationImportController(NorthwindData data) : NorthwindContr
 	public IActionResult GetAddressType() => Ok(AddressType.Shipping);
 
 	[HttpPost]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult FilterCustomersByAddressType(ODataActionParameters parameters)
 	{
 		var type = (AddressType)parameters!["type"];

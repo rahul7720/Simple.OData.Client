@@ -217,7 +217,7 @@ public sealed class ResolvedCommand
 		}
 
 		var isAlternateKey = false;
-		var keyFromFilter = Details.Filter is null && !Details.HasKey ? TryInterpretFilterExpressionAsKey(expression, out isAlternateKey) : null;
+		var keyFromFilter = Details.Filter is null && !Details.HasKey && !IsCollectionQuery() ? TryInterpretFilterExpressionAsKey(expression, out isAlternateKey) : null;
 		if (keyFromFilter is not null)
 		{
 			Details.NamedKeyValues = keyFromFilter;
@@ -285,6 +285,14 @@ public sealed class ResolvedCommand
 
 		return result;
 	}
+
+	/// <summary>
+	/// Whether the command addresses the collection as a whole (ordering, paging, counting, searching, aggregating),
+	/// in which case a key-like filter must stay a <c>$filter</c> instead of collapsing into a key segment.
+	/// </summary>
+	private bool IsCollectionQuery() =>
+		Details.ComputeCount || Details.IncludeCount || Details.OrderByColumns.Count > 0 || Details.SkipCount >= 0 || Details.TopCount > 1
+		|| Details.HasSearch || Details.ApplyClauses.Count > 0 || Details.HasCompute || Details.Index is not null;
 
 	private Dictionary<string, object?>? TryInterpretFilterExpressionAsKey(ODataExpression expression, out bool isAlternateKey)
 	{

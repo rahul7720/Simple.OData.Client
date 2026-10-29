@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -8,20 +9,20 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class CustomersController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Customers.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(string key)
 	{
 		var customer = Find(key);
 		return customer is null ? NotFound() : Ok(customer);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetOrders(string key) => Find(key) is null ? NotFound() : Ok(Data.Orders.Where(x => x.CustomerID == key).AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetAddresses(string key)
 	{
 		var customer = Find(key);
@@ -29,7 +30,7 @@ public class CustomersController(NorthwindData data) : NorthwindController(data)
 	}
 
 	[HttpGet("odata/Customers({key})/Addresses({addressKey})")]
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetAddress(string key, int addressKey)
 	{
 		var address = Find(key)?.Addresses.FirstOrDefault(x => x.Id == addressKey);

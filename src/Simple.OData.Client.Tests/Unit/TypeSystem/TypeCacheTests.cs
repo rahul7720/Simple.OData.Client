@@ -27,7 +27,7 @@ public class TypeCacheTests
 	[Fact]
 	public void GetDerivedTypes_BaseType()
 	{
-		_typeCache.GetDerivedTypes(typeof(Transport)).Should().ContainSingle().Which.Should().Be(typeof(Ship));
+		_typeCache.GetDerivedTypes(typeof(Transport)).Should().BeEquivalentTo([typeof(Ship), typeof(Server.Truck)]);
 	}
 
 	[Fact]

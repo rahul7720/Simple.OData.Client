@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -7,17 +8,17 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class SuppliersController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Suppliers.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var supplier = Data.Suppliers.FirstOrDefault(x => x.SupplierID == key);
 		return supplier is null ? NotFound() : Ok(supplier);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetProducts(int key) => Ok(Data.Products.Where(x => x.SupplierID == key).AsQueryable());
 
 	public IActionResult Post([FromBody] Supplier supplier)

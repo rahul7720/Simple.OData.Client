@@ -212,6 +212,19 @@ public sealed class CommandTextTests
 	}
 
 	[Fact]
+	public async Task KeyLikeFilterStaysAFilterWhenTheQueryIsACollectionQuery()
+	{
+		// $count, $orderby, $skip, $search, $count=true, $apply and $compute address the collection, so the filter must not collapse into a key
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).Count())).Should().Be("Products/$count?$filter=ProductID%20eq%201");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).OrderBy(x => x.ProductName))).Should().Be("Products?$filter=ProductID%20eq%201&$orderby=ProductName");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).Skip(1))).Should().Be("Products?$filter=ProductID%20eq%201&$skip=1");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).WithCount())).Should().Be("Products?$filter=ProductID%20eq%201&$count=true");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).Search("tea"))).Should().Be("Products?$filter=ProductID%20eq%201&$search=tea");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).Top(1))).Should().Be("Products(1)");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1).Select(x => x.ProductName).Expand(x => x.Category))).Should().Be("Products(1)?$expand=Category&$select=ProductName");
+	}
+
+	[Fact]
 	public async Task TypedFilterWithDateTimeOffset()
 	{
 		var created = new DateTimeOffset(2010, 12, 1, 12, 11, 10, TimeSpan.Zero);

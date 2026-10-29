@@ -23,6 +23,7 @@ internal static class ODataLiteral
 	public const string Compute = "$compute";
 	public const string Index = "$index";
 	public const string Each = "$each";
+	public const string It = "$it";
 	public const string SchemaVersion = "$schemaversion";
 	public const string Format = "$format";
 	public const string DeltaToken = "$deltatoken";

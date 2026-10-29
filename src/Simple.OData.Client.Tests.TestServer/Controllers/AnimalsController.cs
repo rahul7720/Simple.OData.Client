@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -8,10 +9,10 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class AnimalsController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Animals.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var animal = Data.Animals.FirstOrDefault(x => x.Id == key);

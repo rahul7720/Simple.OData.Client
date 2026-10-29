@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Microsoft.AspNetCore.OData.Results;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
@@ -9,25 +10,50 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class EmployeesController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Employees.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var employee = Find(key);
 		return employee is null ? NotFound() : Ok(employee);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetSuperior(int key)
 	{
 		var employee = Find(key);
 		return employee is null ? NotFound() : Ok(SingleResult.Create(Data.Employees.Where(x => x.EmployeeID == employee.ReportsTo).AsQueryable()));
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetSubordinates(int key) => Find(key) is null ? NotFound() : Ok(Data.Employees.Where(x => x.ReportsTo == key).AsQueryable());
+
+	[HttpGet("odata/Employees({key})/Superior/Superior")]
+	[NorthwindQuery]
+	public IActionResult GetSuperiorOfSuperior(int key)
+	{
+		var grandSuperior = Find(Find(key)?.ReportsTo)?.ReportsTo is { } id ? Find(id) : null;
+		return grandSuperior is null ? NotFound() : Ok(grandSuperior);
+	}
+
+	[HttpGet("odata/Employees({key})/Superior/Superior/Subordinates")]
+	[NorthwindQuery]
+	public IActionResult GetSubordinatesOfSuperiorOfSuperior(int key)
+	{
+		var grandSuperior = Find(Find(key)?.ReportsTo)?.ReportsTo is { } id ? Find(id) : null;
+		return grandSuperior is null ? NotFound() : Ok(Data.Employees.Where(x => x.ReportsTo == grandSuperior.EmployeeID).AsQueryable());
+	}
+
+	[HttpGet("odata/Employees({key})/Superior/Superior/Subordinates({subordinateKey})")]
+	[NorthwindQuery]
+	public IActionResult GetSubordinateOfSuperiorOfSuperior(int key, int subordinateKey)
+	{
+		var grandSuperior = Find(Find(key)?.ReportsTo)?.ReportsTo is { } id ? Find(id) : null;
+		var subordinate = grandSuperior is null ? null : Data.Employees.FirstOrDefault(x => x.ReportsTo == grandSuperior.EmployeeID && x.EmployeeID == subordinateKey);
+		return subordinate is null ? NotFound() : Ok(subordinate);
+	}
 
 	public IActionResult Post([FromBody] Employee employee)
 	{
@@ -173,5 +199,5 @@ public class EmployeesController(NorthwindData data) : NorthwindController(data)
 		return NoContent();
 	}
 
-	private Employee? Find(int key) => Data.Employees.FirstOrDefault(x => x.EmployeeID == key);
+	private Employee? Find(int? key) => key is null ? null : Data.Employees.FirstOrDefault(x => x.EmployeeID == key);
 }

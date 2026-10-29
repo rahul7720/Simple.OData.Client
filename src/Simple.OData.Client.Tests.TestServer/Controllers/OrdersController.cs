@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Microsoft.AspNetCore.OData.Results;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
@@ -9,27 +10,27 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class OrdersController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Orders.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var order = Find(key);
 		return order is null ? NotFound() : Ok(order);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetOrder_Details(int key) => Find(key) is null ? NotFound() : Ok(Data.OrderDetails.Where(x => x.OrderID == key).AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetCustomer(int key)
 	{
 		var order = Find(key);
 		return order is null ? NotFound() : Ok(SingleResult.Create(Data.Customers.Where(x => x.CustomerID == order.CustomerID).AsQueryable()));
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetEmployee(int key)
 	{
 		var order = Find(key);

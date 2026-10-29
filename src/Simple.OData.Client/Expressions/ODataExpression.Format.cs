@@ -87,6 +87,11 @@ public partial class ODataExpression
 
 	private string FormatReference(ExpressionContext context)
 	{
+		if (Reference == ODataLiteral.It)
+		{
+			return ODataLiteral.It;
+		}
+
 		if (_functionCaller is { Function.FunctionName: ODataLiteral.Cast })
 		{
 			return $"{_functionCaller.Format(context)}/{Reference!.Replace('.', '/')}";
@@ -195,8 +200,36 @@ public partial class ODataExpression
 			builder.Append(FormatExpression(target, context)).Append(',');
 		}
 
-		builder.Append(FormatExpression(function.Arguments[^1], context.Detached()));
+		builder.Append(FormatTypeArgument(function.Arguments[^1], context));
 		return $"{function.FunctionName.ToLowerInvariant()}({builder})";
+	}
+
+	/// <summary>The type argument of <c>isof</c>/<c>cast</c>: a CLR type or a dynamic reference (<c>x.Ships</c>) becomes the quoted qualified type name.</summary>
+	private static string FormatTypeArgument(ODataExpression? argument, ExpressionContext context)
+	{
+		if (argument is { Reference: { } reference, Value: null, Function: null })
+		{
+			return $"'{QualifiedTypeName(context, reference)}'";
+		}
+
+		return FormatExpression(argument, context.Detached());
+	}
+
+	private static string QualifiedTypeName(ExpressionContext context, string typeName)
+	{
+		if (!context.Session.IsInitialized)
+		{
+			return typeName;
+		}
+
+		try
+		{
+			return context.Session.Metadata.GetQualifiedTypeName(typeName);
+		}
+		catch (UnresolvableObjectException)
+		{
+			return typeName;
+		}
 	}
 
 	private string FormatEnumHasFlagFunction(ExpressionContext context)

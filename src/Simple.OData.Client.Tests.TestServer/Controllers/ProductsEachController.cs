@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Microsoft.AspNetCore.OData.Query.Expressions;
 using Microsoft.OData.Edm;
 using Microsoft.OData.UriParser;

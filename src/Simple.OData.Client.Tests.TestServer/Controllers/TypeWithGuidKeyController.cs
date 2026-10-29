@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -7,10 +8,10 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class TypeWithGuidKeyController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.GuidKeyed.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(Guid key)
 	{
 		var item = Data.GuidKeyed.FirstOrDefault(x => x.Key == key);

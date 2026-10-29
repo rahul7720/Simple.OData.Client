@@ -51,7 +51,8 @@ public partial class ODataExpression
 			case ExpressionType.TypeAs:
 				return ParseTypeAsExpression((UnaryExpression)expression);
 			case ExpressionType.Parameter:
-				return null;
+				// the bare lambda parameter is the current instance: $it
+				return FromReference(ODataLiteral.It);
 			case ExpressionType.New:
 			case ExpressionType.NewArrayInit:
 			case ExpressionType.NewArrayBounds:
@@ -288,15 +289,19 @@ public partial class ODataExpression
 
 	private static ODataExpression ParseTypeIsExpression(TypeBinaryExpression typeIsExpression)
 	{
-		var target = ParseLinqExpression(typeIsExpression.Expression);
+		var target = ParseTypeCheckTarget(typeIsExpression.Expression);
 		return FromFunction(new ExpressionFunction(ODataLiteral.IsOf, [target, FromValue(typeIsExpression.TypeOperand)]));
 	}
 
 	private static ODataExpression ParseTypeAsExpression(UnaryExpression typeAsExpression)
 	{
-		var target = ParseLinqExpression(typeAsExpression.Operand);
+		var target = ParseTypeCheckTarget(typeAsExpression.Operand);
 		return FromFunction(new ExpressionFunction(ODataLiteral.Cast, [target, FromValue(typeAsExpression.Type)]));
 	}
+
+	/// <summary><c>isof(Type)</c>/<c>cast(Type)</c> on the instance itself take no target argument.</summary>
+	private static ODataExpression? ParseTypeCheckTarget(Expression expression) =>
+		expression.NodeType == ExpressionType.Parameter ? null : ParseLinqExpression(expression);
 
 	private static object? EvaluateStaticMember(MemberExpression expression)
 	{

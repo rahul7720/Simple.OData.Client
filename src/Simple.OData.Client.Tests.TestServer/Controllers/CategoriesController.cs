@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -8,17 +9,17 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class CategoriesController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Categories.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var category = Find(key);
 		return category is null ? NotFound() : Ok(category);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetProducts(int key) => Find(key) is null ? NotFound() : Ok(Data.Products.Where(x => x.CategoryID == key).AsQueryable());
 
 	public IActionResult Post([FromBody] Category category)

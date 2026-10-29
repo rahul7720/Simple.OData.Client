@@ -209,7 +209,7 @@ public sealed class FluentCommand
 	public FluentCommand Expand(params ODataExpression[] associations)
 	{
 		ArgumentNullException.ThrowIfNull(associations);
-		return Expand(associations.Select(x => new ODataExpandAssociation(ReferenceOf(x))));
+		return Expand(associations.Select(x => ODataExpandAssociation.From(ReferenceOf(x))));
 	}
 
 	/// <summary>Adds <c>$select</c> columns; comma-separated lists are split.</summary>

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Deltas;
 using Microsoft.AspNetCore.OData.Query;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 using Simple.OData.Client.Tests.TestServer.Data;
 using Simple.OData.Client.Tests.TestServer.Models;
 
@@ -8,26 +9,26 @@ namespace Simple.OData.Client.Tests.TestServer.Controllers;
 
 public class TransportController(NorthwindData data) : NorthwindController(data)
 {
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get() => Ok(Data.Transports.AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult Get(int key)
 	{
 		var transport = Find(key);
 		return transport is null ? NotFound() : Ok(transport);
 	}
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetFromShip() => Ok(Data.Transports.OfType<Ship>().AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetFromTruck() => Ok(Data.Transports.OfType<Truck>().AsQueryable());
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetShip(int key) => Find(key) is Ship ship ? Ok(ship) : NotFound();
 
-	[EnableQuery]
+	[NorthwindQuery]
 	public IActionResult GetTruck(int key) => Find(key) is Truck truck ? Ok(truck) : NotFound();
 
 	public IActionResult Post([FromBody] Transport transport)
