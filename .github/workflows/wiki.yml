@@ -1,0 +1,48 @@
+name: Wiki
+
+# Publishes docs/wiki/** to the repository wiki. The wiki must exist (create any page once in the
+# Wiki tab) before the first sync; after that every change under docs/wiki is mirrored automatically.
+
+on:
+  push:
+    branches: [ "main", "master", "xver1" ]
+    paths: [ "docs/wiki/**", ".github/workflows/wiki.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Clone the wiki
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        if ! git clone --depth 1 "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki 2>clone.log; then
+          cat clone.log
+          echo "::error::The wiki repository does not exist yet. Open the Wiki tab of the repository, create any page once, then re-run this workflow."
+          exit 1
+        fi
+
+    - name: Copy the pages
+      run: |
+        find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+        cp -R docs/wiki/. wiki/
+
+    - name: Commit and push
+      run: |
+        cd wiki
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -A
+        if git diff --cached --quiet; then
+          echo "Wiki already up to date."
+          exit 0
+        fi
+        git commit -m "Sync wiki from docs/wiki at ${GITHUB_SHA::7}"
+        git push

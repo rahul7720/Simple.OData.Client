@@ -24,6 +24,10 @@ in-process ASP.NET Core OData service.
 - **Verified against a real server:** a Northwind service hosted in-process with Microsoft.AspNetCore.OData backs
   more than 500 end-to-end scenarios; opt-in live tests cover the public services.odata.org endpoints.
 
+## Documentation
+
+The [wiki](https://github.com/rahul7720/Simple.OData.Client/wiki) has the full guide: getting started, the typed, dynamic and untyped APIs, querying, modifying data, functions and actions, aggregation, paging and change tracking, batches, media, advanced requests, error handling and migration from 6.x. Its source is `docs/wiki` in this repository.
+
 ## Install
 
 The package is published to GitHub Packages as `Nexus.Odata.Client` (the assembly and namespaces stay `Simple.OData.Client`).

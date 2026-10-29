@@ -1,0 +1,1 @@
+Simple.OData.Client 7 · package `Nexus.Odata.Client` · [Releases](https://github.com/rahul7720/Simple.OData.Client/releases) · [Issues](https://github.com/rahul7720/Simple.OData.Client/issues) · This wiki is generated from `docs/wiki` in the repository; edit it there.
