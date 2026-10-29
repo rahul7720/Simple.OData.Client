@@ -15,7 +15,7 @@ internal static class UriLiteralFormatter
 	{
 		ArgumentNullException.ThrowIfNull(session);
 		var text = FormatCore(session, value);
-		return escapeDataString ? Uri.EscapeDataString(text) : text;
+		return escapeDataString ? UriText.Escape(text) : text;
 	}
 
 	private static string FormatCore(ISession session, object? value)

@@ -253,6 +253,129 @@ public sealed class ClientWithFakeHandlerTests
 	}
 
 	[Fact]
+	public async Task BuiltRequestCanRunMoreThanOnce()
+	{
+		var (client, handler) = Create();
+		var entry = $$$"""{{{Context(client, "Products/$entity")}}},"ProductID":1,"ProductName":"Chai"}""";
+		handler.Enqueue(HttpStatusCode.OK, entry);
+		handler.Enqueue(HttpStatusCode.OK, entry);
+		var requestClient = await client.For<Product>().Key(1).WithHeader("x-custom", "yes").BuildRequestFor().FindEntryAsync();
+
+		using (var response = await requestClient.RunAsync())
+		{
+			(await response.ReadAsSingleAsync())!.ProductName.Should().Be("Chai");
+		}
+
+		using (var response = await requestClient.RunAsync())
+		{
+			(await response.ReadAsSingleAsync())!.ProductName.Should().Be("Chai");
+		}
+
+		handler.Requests.Should().HaveCount(2);
+		handler.Requests.Should().AllSatisfy(x => x.Headers.GetValues("x-custom").Should().ContainSingle().Which.Should().Be("yes"));
+	}
+
+	[Fact]
+	public async Task MediaStreamIsReadFromBatchResponse()
+	{
+		var (client, handler) = Create();
+		var body = string.Join("\r\n",
+			"--batchresponse_1",
+			"Content-Type: application/http",
+			"Content-Transfer-Encoding: binary",
+			"",
+			"HTTP/1.1 200 OK",
+			"Content-Type: image/png",
+			"",
+			"image-bytes",
+			"--batchresponse_1--",
+			"");
+		handler.Enqueue(HttpStatusCode.OK, body, "multipart/mixed; boundary=batchresponse_1");
+
+		string? picture = null;
+		var batch = new ODataBatch(client);
+		batch += async c => picture = await c.For<Category>().Key(1).Media("Picture").GetStreamAsStringAsync();
+		await batch.ExecuteAsync();
+
+		handler.LastRequestBody.Should().Contain("GET ").And.Contain("Categories(1)/Picture");
+		picture.Should().Be("image-bytes");
+	}
+
+	private static string TwoInsertsBatchResponse(ODataClient client) => string.Join("\r\n",
+		"--batchresponse_1",
+		"Content-Type: multipart/mixed; boundary=changesetresponse_1",
+		"",
+		"--changesetresponse_1",
+		"Content-Type: application/http",
+		"Content-Transfer-Encoding: binary",
+		"Content-ID: 1",
+		"",
+		"HTTP/1.1 201 Created",
+		"Content-Type: application/json;odata.metadata=minimal",
+		"",
+		$$$"""{{{Context(client, "Categories/$entity")}}},"CategoryID":9,"CategoryName":"Test"}""",
+		"--changesetresponse_1",
+		"Content-Type: application/http",
+		"Content-Transfer-Encoding: binary",
+		"Content-ID: 2",
+		"",
+		"HTTP/1.1 201 Created",
+		"Content-Type: application/json;odata.metadata=minimal",
+		"",
+		$$$"""{{{Context(client, "Products/$entity")}}},"ProductID":23,"ProductName":"New","CategoryID":9}""",
+		"--changesetresponse_1--",
+		"--batchresponse_1--",
+		"");
+
+	[Fact]
+	public async Task DynamicBatchResultsResolveToContentIdReferences()
+	{
+		var (client, handler) = Create();
+		handler.Enqueue(HttpStatusCode.OK, TwoInsertsBatchResponse(client), "multipart/mixed; boundary=batchresponse_1");
+
+		var x = ODataDynamic.Expression;
+		dynamic? category = null;
+		var batch = new ODataBatch(client);
+		batch += async c => category = await c.For(x.Categories).Set(x.CategoryName = "Test").InsertEntryAsync();
+		batch += c => c.For(x.Products).Set(x.ProductName = "New", x.Category = category).InsertEntryAsync(false);
+		await batch.ExecuteAsync();
+
+		handler.LastRequestBody.Should().Contain("\"Category@odata.bind\":\"$1\"");
+		((int)category!.CategoryID).Should().Be(9);
+	}
+
+	[Fact]
+	public async Task TypedBatchResultsResolveToContentIdReferences()
+	{
+		var (client, handler) = Create();
+		handler.Enqueue(HttpStatusCode.OK, TwoInsertsBatchResponse(client), "multipart/mixed; boundary=batchresponse_1");
+
+		Category? category = null;
+		var batch = new ODataBatch(client);
+		batch += async c => category = await c.For<Category>().Set(new { CategoryName = "Test" }).InsertEntryAsync();
+		batch += c => c.For<Product>().Set(new { ProductName = "New", Category = category }).InsertEntryAsync(false);
+		await batch.ExecuteAsync();
+
+		handler.LastRequestBody.Should().Contain("\"Category@odata.bind\":\"$1\"");
+		category!.CategoryID.Should().Be(9);
+	}
+
+	[Fact]
+	public async Task CommandTextRoundTripsThroughTheUntypedApiWithoutDoubleEscaping()
+	{
+		var (client, handler) = Create();
+		handler.Enqueue(HttpStatusCode.OK, $$$"""{{{Context(client, "Products")}}},"value":[{"ProductID":1,"ProductName":"Test1"}]}""");
+		handler.Enqueue(HttpStatusCode.NoContent);
+		var commandText = await client.For<Product>().Filter(x => x.ProductName == "Test1" && x.UnitPrice > 1).GetCommandTextAsync();
+		commandText.Should().Be("Products?$filter=ProductName%20eq%20'Test1'%20and%20UnitPrice%20gt%201");
+
+		await client.DeleteEntriesAsync("Products", commandText);
+
+		handler.Requests[0].RequestUri!.PathAndQuery.Should().EndWith("/Products?$filter=ProductName%20eq%20'Test1'%20and%20UnitPrice%20gt%201");
+		handler.Requests[1].Method.Should().Be(HttpMethod.Delete);
+	}
+
+	[Fact]
 	public async Task LinkAndUnlinkEntries()
 	{
 		var (client, handler) = Create();

@@ -60,6 +60,8 @@ internal sealed class BatchWriter(Session session, ConcurrentDictionary<object, 
 		content.Headers.ContentType = MediaTypeHeaderValue.Parse(_requestMessage.GetHeader(HttpLiteral.ContentType) ?? HttpLiteral.MultipartMixed);
 		content.Headers.ContentLength = stream.Length;
 		var request = new HttpRequestMessage(HttpMethod.Post, Utils.CreateAbsoluteUri(session.BaseUri, ODataLiteral.Batch)) { Content = content };
+		// the response comes back in the format of the request unless told otherwise, so ask for it explicitly
+		request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(IsJson ? HttpLiteral.ApplicationJson : HttpLiteral.MultipartMixed));
 		if (IsJson)
 		{
 			request.Headers.TryAddWithoutValidation(HttpLiteral.ODataVersion, "4.01");
@@ -136,7 +138,7 @@ internal sealed class BatchWriter(Session session, ConcurrentDictionary<object, 
 		}
 	}
 
-	public async Task<ODataBatchOperationRequestMessage> CreateOperationMessageAsync(Uri uri, string method, string? collection, IDictionary<string, object?>? entryData, bool resultRequired)
+	public async Task<ODataBatchOperationRequestMessage> CreateOperationMessageAsync(Uri uri, string method, string? collection, IDictionary<string, object?>? entryData, bool resultRequired, IDictionary<string, string>? headers = null)
 	{
 		if (_batchWriter is null)
 		{
@@ -171,6 +173,17 @@ internal sealed class BatchWriter(Session session, ConcurrentDictionary<object, 
 		if (collection is not null && method is RestVerbs.Put or RestVerbs.Patch or RestVerbs.Delete && session.Metadata.EntityCollectionRequiresOptimisticConcurrencyCheck(collection))
 		{
 			message.SetHeader(HttpLiteral.IfMatch, EntityTagHeaderValue.Any.Tag);
+		}
+
+		if (headers is not null)
+		{
+			foreach (var (name, value) in headers)
+			{
+				if (!string.Equals(name, HttpLiteral.ContentId, StringComparison.OrdinalIgnoreCase))
+				{
+					message.SetHeader(name, value);
+				}
+			}
 		}
 
 		return message;

@@ -424,7 +424,12 @@ public sealed partial class ODataClient
 	{
 		if (IsBatchResponse)
 		{
-			return Stream.Null;
+			return BatchResponse!.AsEntry(false)?.Values.FirstOrDefault() switch
+			{
+				byte[] bytes => new MemoryStream(bytes),
+				string text => Utils.StringToStream(text),
+				_ => Stream.Null,
+			};
 		}
 
 		await Session.InitializeAsync(cancellationToken).ConfigureAwait(false);

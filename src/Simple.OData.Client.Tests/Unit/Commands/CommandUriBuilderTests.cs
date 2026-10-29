@@ -29,7 +29,7 @@ public sealed class CommandUriBuilderTests
 
 	[Fact]
 	public void FilterTextIsEscaped() =>
-		Format(new FluentCommand().For("Products").Filter("ProductName eq 'Chai'")).Should().Be("Products?$filter=ProductName%20eq%20%27Chai%27");
+		Format(new FluentCommand().For("Products").Filter("ProductName eq 'Chai'")).Should().Be("Products?$filter=ProductName%20eq%20'Chai'");
 
 	[Fact]
 	public void FilterStringsAreCombined() =>
@@ -40,15 +40,15 @@ public sealed class CommandUriBuilderTests
 	public void FilterExpressionEscapesUnicodeAndQuotes()
 	{
 		Format(new FluentCommand().For("Products").Filter(new ODataExpression<Product>(x => x.ProductName == "Ü")))
-			.Should().Be("Products?$filter=ProductName%20eq%20%27%C3%9C%27");
+			.Should().Be("Products?$filter=ProductName%20eq%20'%C3%9C'");
 		Format(new FluentCommand().For("Products").Filter(new ODataExpression<Product>(x => x.ProductName == "O'Brien")))
-			.Should().Be("Products?$filter=ProductName%20eq%20%27O%27%27Brien%27");
+			.Should().Be("Products?$filter=ProductName%20eq%20'O''Brien'");
 	}
 
 	[Fact]
 	public void FilterFunctionCallIsEscaped() =>
 		Format(new FluentCommand().For("Products").Filter(new ODataExpression<Product>(x => x.ProductName.Contains("ai"))))
-			.Should().Be("Products?$filter=contains%28ProductName%2C%27ai%27%29");
+			.Should().Be("Products?$filter=contains%28ProductName%2C'ai'%29");
 
 	[Fact]
 	public void SearchIsEscaped() =>
@@ -201,7 +201,7 @@ public sealed class CommandUriBuilderTests
 	public void CustomQueryOptions()
 	{
 		Format(new FluentCommand().For("Products").QueryOptions("foo=bar")).Should().Be("Products?foo=bar");
-		Format(new FluentCommand().For("Products").QueryOptions(new Dictionary<string, object?> { ["foo"] = 1, ["bar"] = "x" })).Should().Be("Products?foo=1&bar=%27x%27");
+		Format(new FluentCommand().For("Products").QueryOptions(new Dictionary<string, object?> { ["foo"] = 1, ["bar"] = "x" })).Should().Be("Products?foo=1&bar='x'");
 	}
 
 	[Fact]

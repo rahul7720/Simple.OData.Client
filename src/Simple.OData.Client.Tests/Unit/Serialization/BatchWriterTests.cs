@@ -52,6 +52,37 @@ public sealed class BatchWriterTests
 	}
 
 	[Fact]
+	public async Task OperationHeadersAreWrittenIntoMultipartParts()
+	{
+		var (_, batch, writer) = Create();
+		var headers = new Dictionary<string, string> { ["x-custom"] = "yes" };
+		await writer.CreateGetRequestAsync("Products(1)", false, headers);
+		await writer.CreateInsertRequestAsync("Products", "Products", new Dictionary<string, object?> { ["ProductName"] = "Chai" }, true, headers);
+		var message = await batch.EndBatchAsync();
+		message.Headers.Accept.ToString().Should().Be("multipart/mixed", "the response should come back in the request's format");
+		var body = await BodyAsync(message);
+		System.Text.RegularExpressions.Regex.Matches(body, "x-custom: yes").Should().HaveCount(2);
+	}
+
+	[Fact]
+	public async Task OperationHeadersAreWrittenIntoJsonRequests()
+	{
+		var (_, batch, writer) = Create(s => s.BatchFormat = BatchFormat.Json);
+		var headers = new Dictionary<string, string> { ["x-custom"] = "yes" };
+		await writer.CreateGetRequestAsync("Products(1)", false, headers);
+		await writer.CreateInsertRequestAsync("Products", "Products", new Dictionary<string, object?> { ["ProductName"] = "Chai" }, true, headers);
+		var message = await batch.EndBatchAsync();
+		message.Headers.Accept.ToString().Should().Be("application/json");
+		using var document = JsonDocument.Parse(await BodyAsync(message));
+		var requests = document.RootElement.GetProperty("requests");
+		requests.GetArrayLength().Should().Be(2);
+		foreach (var request in requests.EnumerateArray())
+		{
+			request.GetProperty("headers").GetProperty("x-custom").GetString().Should().Be("yes");
+		}
+	}
+
+	[Fact]
 	public async Task ContentIdsAreMappedThroughBatchEntries()
 	{
 		var (_, batch, writer) = Create();

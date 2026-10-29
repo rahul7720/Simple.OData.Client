@@ -28,6 +28,121 @@ internal sealed class ResponseReader(Session session)
 		return ReadAsync(message, cancellationToken);
 	}
 
+	/// <summary>Reads a <c>$batch</c> response in either the multipart or the JSON batch format.</summary>
+	public async Task<ODataResponse> ReadBatchAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+	{
+		ArgumentNullException.ThrowIfNull(response);
+		var message = new ODataResponseMessage(response);
+		var headers = ToHeaders(message.Headers);
+		if (message.GetHeader(HttpLiteral.ContentType)?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+		{
+			return await ReadJsonBatchAsync(message, headers, cancellationToken).ConfigureAwait(false);
+		}
+
+		using var messageReader = new ODataMessageReader(message, CreateReaderSettings(message), Model);
+		return await ReadBatchAsync(messageReader, message.StatusCode, headers, cancellationToken).ConfigureAwait(false);
+	}
+
+	/// <summary>
+	/// Reads the JSON batch format (<c>{"responses":[{"id","status","headers","body"}]}</c>) directly: ODataLib's JSON batch reader
+	/// mistakes a failed operation's <c>{"error":…}</c> body for an in-stream error of the whole payload.
+	/// </summary>
+	private async Task<ODataResponse> ReadJsonBatchAsync(ODataResponseMessage message, IReadOnlyDictionary<string, string> headers, CancellationToken cancellationToken)
+	{
+		using var document = await JsonDocument.ParseAsync(await message.GetStreamAsync(cancellationToken).ConfigureAwait(false), cancellationToken: cancellationToken).ConfigureAwait(false);
+		var responses = new List<ODataResponse>();
+		if (!document.RootElement.TryGetProperty("responses", out var items) || items.ValueKind != JsonValueKind.Array)
+		{
+			throw new ODataException("The JSON batch response does not contain a 'responses' array.");
+		}
+
+		foreach (var item in items.EnumerateArray())
+		{
+			var statusCode = item.TryGetProperty("status", out var status) ? status.GetInt32() : (int)HttpStatusCode.OK;
+			using var operation = new HttpResponseMessage((HttpStatusCode)statusCode);
+			if (item.TryGetProperty("headers", out var operationHeaders) && operationHeaders.ValueKind == JsonValueKind.Object)
+			{
+				foreach (var header in operationHeaders.EnumerateObject())
+				{
+					if (!header.Name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase))
+					{
+						operation.Headers.TryAddWithoutValidation(header.Name, header.Value.GetString());
+					}
+				}
+			}
+
+			operation.Content = ToContent(item, operationHeaders);
+			responses.Add(await ReadBatchOperationAsync(operation, cancellationToken).ConfigureAwait(false));
+		}
+
+		return ODataResponse.FromBatch(TypeCache, responses, message.StatusCode, headers);
+	}
+
+	private static HttpContent ToContent(JsonElement item, JsonElement operationHeaders)
+	{
+		HttpContent content = item.TryGetProperty("body", out var body)
+			? body.ValueKind switch
+			{
+				JsonValueKind.Object or JsonValueKind.Array => new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(body.GetRawText())),
+				JsonValueKind.String => new ByteArrayContent(TryFromBase64(body.GetString()!)),
+				JsonValueKind.Null or JsonValueKind.Undefined => new ByteArrayContent([]),
+				_ => new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(body.GetRawText())),
+			}
+			: new ByteArrayContent([]);
+
+		if (operationHeaders.ValueKind == JsonValueKind.Object)
+		{
+			foreach (var header in operationHeaders.EnumerateObject())
+			{
+				if (header.Name.StartsWith("Content-", StringComparison.OrdinalIgnoreCase) && !header.Name.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+				{
+					content.Headers.TryAddWithoutValidation(header.Name, header.Value.GetString());
+				}
+			}
+		}
+
+		return content;
+	}
+
+	/// <summary>Binary bodies are base64 strings in the JSON batch format; anything else is kept as UTF-8 text.</summary>
+	private static byte[] TryFromBase64(string text)
+	{
+		var buffer = new byte[(text.Length * 3 / 4) + 3];
+		return Convert.TryFromBase64String(text, buffer, out var written) ? buffer[..written] : System.Text.Encoding.UTF8.GetBytes(text);
+	}
+
+	private async Task<ODataResponse> ReadBatchOperationAsync(HttpResponseMessage operation, CancellationToken cancellationToken)
+	{
+		var message = new ODataResponseMessage(operation);
+		var operationHeaders = ToHeaders(message.Headers);
+		var contentType = message.GetHeader(HttpLiteral.ContentType);
+		if (operation.StatusCode == HttpStatusCode.NoContent || !await message.HasContentAsync(cancellationToken).ConfigureAwait(false))
+		{
+			return operation.IsSuccessStatusCode
+				? ODataResponse.FromStatusCode(TypeCache, message.StatusCode, operationHeaders)
+				: FromFailure(message.StatusCode, operationHeaders, null);
+		}
+
+		if (!operation.IsSuccessStatusCode)
+		{
+			return FromFailure(message.StatusCode, operationHeaders, await TryReadErrorAsync(message).ConfigureAwait(false));
+		}
+
+		if (IsRawContent(contentType))
+		{
+			using var stream = await message.GetStreamAsync(cancellationToken).ConfigureAwait(false);
+			return ODataResponse.FromValue(TypeCache, Utils.StreamToByteArray(stream), message.StatusCode, operationHeaders);
+		}
+
+		return await ReadAsync(message, cancellationToken).ConfigureAwait(false);
+	}
+
+	private ODataResponse FromFailure(int statusCode, IReadOnlyDictionary<string, string> headers, ODataErrorDetails? error)
+	{
+		var exception = WebRequestException.CreateFromStatusCode((HttpStatusCode)statusCode, session.Settings.WebRequestExceptionMessageSource, null, error);
+		return ODataResponse.FromError(TypeCache, statusCode, headers, error, exception);
+	}
+
 	public async Task<ODataResponse> ReadAsync(IODataResponseMessage message, CancellationToken cancellationToken)
 	{
 		ArgumentNullException.ThrowIfNull(message);
@@ -214,9 +329,13 @@ internal sealed class ResponseReader(Session session)
 			}
 			else if (operation.StatusCode >= (int)HttpStatusCode.BadRequest)
 			{
-				var error = await TryReadErrorAsync(operation).ConfigureAwait(false);
-				var exception = WebRequestException.CreateFromStatusCode((HttpStatusCode)operation.StatusCode, session.Settings.WebRequestExceptionMessageSource, null, error);
-				responses.Add(ODataResponse.FromError(TypeCache, operation.StatusCode, operationHeaders, error, exception));
+				responses.Add(FromFailure(operation.StatusCode, operationHeaders, await TryReadErrorAsync(operation).ConfigureAwait(false)));
+			}
+			else if (IsRawContent(operation.GetHeader(HttpLiteral.ContentType)))
+			{
+				// media resources and other non-OData bodies (image/png, application/octet-stream, …) are returned as bytes
+				using var stream = await operation.GetStreamAsync(cancellationToken).ConfigureAwait(false);
+				responses.Add(ODataResponse.FromValue(TypeCache, Utils.StreamToByteArray(stream), operation.StatusCode, operationHeaders));
 			}
 			else
 			{
@@ -603,6 +722,12 @@ internal sealed class ResponseReader(Session session)
 		settings.EnableMessageStreamDisposal = message is ODataBatchOperationResponseMessage;
 		return settings;
 	}
+
+	private static bool IsRawContent(string? contentType) =>
+		!string.IsNullOrEmpty(contentType)
+		&& !contentType.Contains("json", StringComparison.OrdinalIgnoreCase)
+		&& !contentType.Contains("xml", StringComparison.OrdinalIgnoreCase)
+		&& !contentType.StartsWith("text/", StringComparison.OrdinalIgnoreCase);
 
 	private static bool IsMetadataNone(string contentType) => contentType.Contains("odata.metadata=none", StringComparison.OrdinalIgnoreCase);
 

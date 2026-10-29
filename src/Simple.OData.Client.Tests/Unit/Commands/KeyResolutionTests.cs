@@ -44,7 +44,7 @@ public sealed class KeyResolutionTests
 	[Fact]
 	public void PrimaryKey_SingleProperty_NoMatchingFilter() =>
 		Format(new FluentCommand().For("Categories").Filter(new ODataExpression<Category>(x => x.CategoryID == 1 && x.CategoryName == "Test")))
-			.Should().Be("Categories?$filter=CategoryID%20eq%201%20and%20CategoryName%20eq%20%27Test%27");
+			.Should().Be("Categories?$filter=CategoryID%20eq%201%20and%20CategoryName%20eq%20'Test'");
 
 	[Fact]
 	public void PrimaryKey_NavigationKeyFilterStaysFilter()
@@ -58,28 +58,28 @@ public sealed class KeyResolutionTests
 
 	[Fact]
 	public void AlternateKey_SingleProperty() =>
-		Format(new FluentCommand().For("Categories").Key(new { CategoryName = "Beverages" })).Should().Be("Categories(CategoryName=%27Beverages%27)");
+		Format(new FluentCommand().For("Categories").Key(new { CategoryName = "Beverages" })).Should().Be("Categories(CategoryName='Beverages')");
 
 	[Fact]
 	public void AlternateKey_SingleProperty_AsFilter() =>
 		Format(new FluentCommand().For("Categories").Filter(new ODataExpression<Category>(x => x.CategoryName == "Beverages")))
-			.Should().Be("Categories(CategoryName=%27Beverages%27)");
+			.Should().Be("Categories(CategoryName='Beverages')");
 
 	[Fact]
 	public void AlternateKey_MultipleProperty() =>
 		Format(new FluentCommand().For("Employees").Key(new { HomePhone = "123", Title = "Manager" }))
-			.Should().Be("Employees(HomePhone=%27123%27,Title=%27Manager%27)");
+			.Should().Be("Employees(HomePhone='123',Title='Manager')");
 
 	[Fact]
 	public void AlternateKey_MultipleProperty_FromFilter() =>
 		Format(new FluentCommand().For("Employees").Filter(new ODataExpression<Employee>(x => x.HomePhone == "123" && x.Title == "Manager")))
-			.Should().Be("Employees(HomePhone=%27123%27,Title=%27Manager%27)");
+			.Should().Be("Employees(HomePhone='123',Title='Manager')");
 
 	[Fact]
 	public void AlternateKey_MultipleKeys()
 	{
-		Format(new FluentCommand().For("Orders").Key(new { CustomerID = "ALFKI" })).Should().Be("Orders(CustomerID=%27ALFKI%27)");
-		Format(new FluentCommand().For("Orders").Key(new { ShipName = "TEST" })).Should().Be("Orders(ShipName=%27TEST%27)");
+		Format(new FluentCommand().For("Orders").Key(new { CustomerID = "ALFKI" })).Should().Be("Orders(CustomerID='ALFKI')");
+		Format(new FluentCommand().For("Orders").Key(new { ShipName = "TEST" })).Should().Be("Orders(ShipName='TEST')");
 	}
 
 	[Fact]
@@ -122,7 +122,7 @@ public sealed class KeyResolutionTests
 	{
 		var session = MetadataClientFactory.CreateSession("Northwind4WithAlternateKeys.xml", s => s.KeyAsSegment = true);
 		Format(new FluentCommand().For("Order_Details").Key(1, 2), session).Should().Be("Order_Details(OrderID=1,ProductID=2)");
-		Format(new FluentCommand().For("Categories").Key(new { CategoryName = "Beverages" }), session).Should().Be("Categories(CategoryName=%27Beverages%27)");
+		Format(new FluentCommand().For("Categories").Key(new { CategoryName = "Beverages" }), session).Should().Be("Categories(CategoryName='Beverages')");
 	}
 
 	[Fact]

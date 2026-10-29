@@ -188,7 +188,7 @@ public sealed class FunctionTests(TestServerFixture fixture) : ServerTestBase(fi
 	public async Task FunctionCommandText()
 	{
 		var client = CreateClient();
-		(await client.Unbound().Function("PassThroughString").Set(new Entry { ["value"] = "abc" }).GetCommandTextAsync()).Should().Be("PassThroughString(value=%27abc%27)");
+		(await client.Unbound().Function("PassThroughString").Set(new Entry { ["value"] = "abc" }).GetCommandTextAsync()).Should().Be("PassThroughString(value='abc')");
 		(await client.For("Products").Function("MostExpensive").GetCommandTextAsync()).Should().Be("Products/NorthwindModel.MostExpensive()");
 		(await client.For("Products").Key(1).Function("Discounted").Set(new Entry { ["percent"] = 50 }).GetCommandTextAsync()).Should().Be("Products(1)/NorthwindModel.Discounted(percent=50)");
 	}

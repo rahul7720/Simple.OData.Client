@@ -145,7 +145,7 @@ public sealed class CommandTextTests
 		var x = ODataDynamic.Expression;
 		var client = MetadataClientFactory.CreateClient("TripPin.xml");
 		string text = await client.For(x.Person).Key("scottketchum").NavigateTo(x.Trip).Key(0).Function("GetInvolvedPeople").Expand(x.Photos).GetCommandTextAsync();
-		text.Should().Be("People(%27scottketchum%27)/Trips(0)/Microsoft.OData.SampleService.Models.TripPin.GetInvolvedPeople()?$expand=Photo");
+		text.Should().Be("People('scottketchum')/Trips(0)/Microsoft.OData.SampleService.Models.TripPin.GetInvolvedPeople()?$expand=Photo");
 	}
 
 	[Fact]
@@ -183,9 +183,9 @@ public sealed class CommandTextTests
 	{
 		(await Text(Client.For<Employee>().Filter(x => x.Subordinates.Any(y => y.EmployeeID == 1)))).Should().Be("Employees?$filter=Subordinates%2Fany%28x1%3Ax1%2FEmployeeID%20eq%201%29");
 		(await Text(Client.For<Employee>().Filter(x => x.Subordinates.Any(y => y.EmployeeID == 1 && y.FirstName == "abc"))))
-			.Should().Be("Employees?$filter=Subordinates%2Fany%28x1%3Ax1%2FEmployeeID%20eq%201%20and%20x1%2FFirstName%20eq%20%27abc%27%29");
+			.Should().Be("Employees?$filter=Subordinates%2Fany%28x1%3Ax1%2FEmployeeID%20eq%201%20and%20x1%2FFirstName%20eq%20'abc'%29");
 		(await Text(Client.For<Employee>().Filter(x => x.Subordinates.Any(y => y.EmployeeID == 1 && y.FirstName.Contains("abc")))))
-			.Should().Be("Employees?$filter=Subordinates%2Fany%28x1%3Ax1%2FEmployeeID%20eq%201%20and%20contains%28x1%2FFirstName%2C%27abc%27%29%29");
+			.Should().Be("Employees?$filter=Subordinates%2Fany%28x1%3Ax1%2FEmployeeID%20eq%201%20and%20contains%28x1%2FFirstName%2C'abc'%29%29");
 		(await Text(Client.For<Product>().Filter(x => x.Category.Products.Any(y => y.ProductID == 1)))).Should().Be("Products?$filter=Category%2FProducts%2Fany%28x1%3Ax1%2FProductID%20eq%201%29");
 		(await Text(Client.For<Product>().Filter(x => x.Category.Products.Any(y => y.Category.Products.Any(z => z.ProductID == 1)))))
 			.Should().Be("Products?$filter=Category%2FProducts%2Fany%28x1%3Ax1%2FCategory%2FProducts%2Fany%28x2%3Ax2%2FProductID%20eq%201%29%29");
@@ -203,12 +203,12 @@ public sealed class CommandTextTests
 			.Should().Be("Products?$filter=%28ProductID%20ne%201%20or%20ProductID%20ne%202%29%20and%20ProductID%20ne%203");
 		(await Text(Client.For<Product>().Filter(x => !(x.ProductID == 1)))).Should().Be("Products?$filter=not%20%28ProductID%20eq%201%29");
 		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1L))).Should().Be("Products(1)");
-		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1 && x.ProductName == "abc"))).Should().Be("Products?$filter=ProductID%20eq%201%20and%20ProductName%20eq%20%27abc%27");
+		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1 && x.ProductName == "abc"))).Should().Be("Products?$filter=ProductID%20eq%201%20and%20ProductName%20eq%20'abc'");
 		(await Text(Client.For<Product>().Filter(x => x.ProductID == 1 && x.ProductID == 1))).Should().Be("Products(1)");
 		(await Text(Client.For<OrderDetail>().Filter(x => x.OrderID == 1 && x.Quantity == 1))).Should().Be("Order_Details?$filter=OrderID%20eq%201%20and%20Quantity%20eq%201");
 		(await Text(Client.For<OrderDetail>().Filter(x => x.OrderID == 1 && x.ProductID == 2))).Should().Be("Order_Details(OrderID=1,ProductID=2)");
 		(await Text(Client.For<OrderDetail>().Filter(x => x.OrderID == 1))).Should().Be("Order_Details?$filter=OrderID%20eq%201");
-		(await Text(Client.For<Category>().Key(1).Filter(x => x.CategoryName == "Beverages"))).Should().Be("Categories(1)?$filter=CategoryName%20eq%20%27Beverages%27");
+		(await Text(Client.For<Category>().Key(1).Filter(x => x.CategoryName == "Beverages"))).Should().Be("Categories(1)?$filter=CategoryName%20eq%20'Beverages'");
 	}
 
 	[Fact]
@@ -244,10 +244,10 @@ public sealed class CommandTextTests
 	public async Task TypedNavigation()
 	{
 		(await Text(Client.For<Employee>().Filter(x => x.EmployeeID == 1).NavigateTo("Superior"))).Should().Be("Employees(1)/Superior");
-		(await Text(Client.For<Customer>().Filter(x => x.CustomerID == "ALFKI").NavigateTo<Order>())).Should().Be("Customers(%27ALFKI%27)/Orders");
+		(await Text(Client.For<Customer>().Filter(x => x.CustomerID == "ALFKI").NavigateTo<Order>())).Should().Be("Customers('ALFKI')/Orders");
 		(await Text(Client.For<Employee>().Filter(x => x.EmployeeID == 2).NavigateTo("Subordinates"))).Should().Be("Employees(2)/Subordinates");
 		(await Text(Client.For<Order>().Filter(x => x.OrderID == 10952).NavigateTo<OrderDetail>())).Should().Be("Orders(10952)/Order_Details");
-		(await Text(Client.For<Employee>().Key(1).NavigateTo(x => x.Subordinates).Filter(x => x.FirstName == "a"))).Should().Be("Employees(1)/Subordinates?$filter=FirstName%20eq%20%27a%27");
+		(await Text(Client.For<Employee>().Key(1).NavigateTo(x => x.Subordinates).Filter(x => x.FirstName == "a"))).Should().Be("Employees(1)/Subordinates?$filter=FirstName%20eq%20'a'");
 	}
 
 	[Fact]
@@ -261,9 +261,9 @@ public sealed class CommandTextTests
 	public async Task TypedQueryOptions()
 	{
 		(await Text(Client.For<Product>().Filter(x => x.ProductName == "abc").QueryOptions<QueryOptions>(y => y.IntOption == 42 && y.StringOption == "xyz")))
-			.Should().Be("Products?$filter=ProductName%20eq%20%27abc%27&IntOption=42&StringOption='xyz'");
+			.Should().Be("Products?$filter=ProductName%20eq%20'abc'&IntOption=42&StringOption='xyz'");
 		(await Text(Client.For<Product>().Filter(x => x.ProductName == "abc").QueryOptions(new Dictionary<string, object?> { ["IntOption"] = 42, ["StringOption"] = "xyz" })))
-			.Should().Be("Products?$filter=ProductName%20eq%20%27abc%27&IntOption=42&StringOption=%27xyz%27");
+			.Should().Be("Products?$filter=ProductName%20eq%20'abc'&IntOption=42&StringOption='xyz'");
 	}
 
 	[Fact]
@@ -272,7 +272,7 @@ public sealed class CommandTextTests
 		var key = new Guid("D8F3F70F-C185-49AB-9A92-0C86C344AB1B");
 		(await Text(Client.For<TypeWithGuidKey>().Filter(x => x.Key == key))).Should().Be("TypeWithGuidKey(d8f3f70f-c185-49ab-9a92-0c86c344ab1b)");
 		(await Text(Client.For<TypeWithGuidKey>().Key(key))).Should().Be("TypeWithGuidKey(d8f3f70f-c185-49ab-9a92-0c86c344ab1b)");
-		(await Text(Client.For("project1").Key("abc"))).Should().Be("project1(%27abc%27)");
+		(await Text(Client.For("project1").Key("abc"))).Should().Be("project1('abc')");
 		(await Text(Client.For<Product>().Key(new Product { ProductID = 3 }))).Should().Be("Products(3)");
 	}
 
@@ -306,7 +306,7 @@ public sealed class CommandTextTests
 		await Check(Client.For(x.Product).Filter(x.ProductID != 1 || x.ProductID != 2).Filter(x.ProductID != 3), "Products?$filter=%28ProductID%20ne%201%20or%20ProductID%20ne%202%29%20and%20ProductID%20ne%203");
 		await Check(Client.For(x.Products).Filter(!(x.ProductID == 1)), "Products?$filter=not%20%28ProductID%20eq%201%29");
 		await Check(Client.For(x.Products).Filter(x.ProductID == 1L), "Products(1)");
-		await Check(Client.For(x.Products).Filter(x.ProductID == 1 && x.ProductName == "abc"), "Products?$filter=ProductID%20eq%201%20and%20ProductName%20eq%20%27abc%27");
+		await Check(Client.For(x.Products).Filter(x.ProductID == 1 && x.ProductName == "abc"), "Products?$filter=ProductID%20eq%201%20and%20ProductName%20eq%20'abc'");
 		await Check(Client.For(x.Products).Filter(x.ProductID == 1 && x.ProductID == 1), "Products(1)");
 		await Check(Client.For(x.OrderDetails).Filter(x.OrderID == 1 && x.ProductID == 2), "Order_Details(OrderID=1,ProductID=2)");
 		await Check(Client.For(x.OrderDetails).Filter(x.OrderID == 1), "Order_Details?$filter=OrderID%20eq%201");
@@ -317,12 +317,12 @@ public sealed class CommandTextTests
 	{
 		var x = ODataDynamic.Expression;
 		await Check(Client.For(x.Employees).Filter(x.EmployeeID == 1).NavigateTo(x.Superior), "Employees(1)/Superior");
-		await Check(Client.For(x.Customers).Filter(x.CustomerID == "ALFKI").NavigateTo(x.Orders), "Customers(%27ALFKI%27)/Orders");
+		await Check(Client.For(x.Customers).Filter(x.CustomerID == "ALFKI").NavigateTo(x.Orders), "Customers('ALFKI')/Orders");
 		await Check(Client.For(x.Employees).Filter(x.EmployeeID == 2).NavigateTo(x.Subordinates), "Employees(2)/Subordinates");
 		await Check(Client.For(x.Orders).Filter(x.OrderID == 10952).NavigateTo(x.OrderDetails), "Orders(10952)/Order_Details");
 		await Check(Client.For(x.Transport).Filter(x.TransportID == 1), "Transport(1)");
 		await Check(Client.For(x.Transport).As(x.Ship).Filter(x.TransportID == 1), "Transport(1)/NorthwindModel.Ships");
-		await Check(Client.For(x.Product).Filter(x.ProductName == "abc").QueryOptions(x.IntOption == 42 && x.StringOption == "xyz"), "Products?$filter=ProductName%20eq%20%27abc%27&IntOption=42&StringOption='xyz'");
+		await Check(Client.For(x.Product).Filter(x.ProductName == "abc").QueryOptions(x.IntOption == 42 && x.StringOption == "xyz"), "Products?$filter=ProductName%20eq%20'abc'&IntOption=42&StringOption='xyz'");
 	}
 
 	// ---- 4.01 options -----------------------------------------------------------------------------------------

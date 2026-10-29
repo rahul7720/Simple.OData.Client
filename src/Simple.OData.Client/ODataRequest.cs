@@ -11,6 +11,7 @@ public sealed class ODataRequest
 	private readonly string? _contentType;
 	private readonly List<string> _preferences = [];
 	private HttpRequestMessage? _message;
+	private bool _sent;
 
 	internal ODataRequest(string method, Session session, string commandText, IDictionary<string, string>? headers = null)
 	{
@@ -48,6 +49,19 @@ public sealed class ODataRequest
 
 	/// <summary>The HTTP request message, created on first access from the request parts.</summary>
 	public HttpRequestMessage RequestMessage => _message ??= CreateMessage();
+
+	/// <summary>The message to send now: the current one, or a fresh copy when it has already been sent.</summary>
+	internal HttpRequestMessage PrepareForSend()
+	{
+		var message = RequestMessage;
+		if (_sent)
+		{
+			message = _message = CloneMessage(message);
+		}
+
+		_sent = true;
+		return message;
+	}
 
 	/// <summary>The relative command text (resource path and query options).</summary>
 	public string CommandText { get; }
@@ -93,23 +107,47 @@ public sealed class ODataRequest
 		}
 	}
 
+	private HttpRequestMessage CloneMessage(HttpRequestMessage source)
+	{
+		var message = CreateMessage();
+		foreach (var (name, values) in source.Headers)
+		{
+			if (!message.Headers.Contains(name))
+			{
+				message.Headers.TryAddWithoutValidation(name, values);
+			}
+		}
+
+		if (message.Content is not null && source.Content is not null)
+		{
+			foreach (var (name, values) in source.Content.Headers)
+			{
+				if (!message.Content.Headers.Contains(name))
+				{
+					message.Content.Headers.TryAddWithoutValidation(name, values);
+				}
+			}
+		}
+
+		return message;
+	}
+
 	private HttpRequestMessage CreateMessage()
 	{
 		var message = new HttpRequestMessage(new HttpMethod(Method), _uri);
 		if (_content is not null)
 		{
-			if (_content.CanSeek)
+			// payloads written by ODataLib sit in memory: share the buffer so the request can be sent again
+			HttpContent content = _content is MemoryStream buffered && buffered.TryGetBuffer(out var segment)
+				? new ReadOnlyMemoryContent(segment.AsMemory())
+				: new StreamContent(_content);
+			if (_content.CanSeek && content is StreamContent)
 			{
 				_content.Position = 0;
-			}
-
-			var content = new StreamContent(_content);
-			content.Headers.ContentType = MediaTypeHeaderValue.Parse(_contentType ?? HttpLiteral.ApplicationJson);
-			if (_content.CanSeek)
-			{
 				content.Headers.ContentLength = _content.Length;
 			}
 
+			content.Headers.ContentType = MediaTypeHeaderValue.Parse(_contentType ?? HttpLiteral.ApplicationJson);
 			message.Content = content;
 		}
 

@@ -58,8 +58,18 @@ public sealed partial class BoundClient<T>
 	}
 
 	/// <inheritdoc />
-	public async Task<T?> InsertEntryAsync(bool resultRequired = true, CancellationToken cancellationToken = default) =>
-		ConvertResult(await Client.InsertEntryAsync(Command, resultRequired, cancellationToken).ConfigureAwait(false));
+	public async Task<T?> InsertEntryAsync(bool resultRequired = true, CancellationToken cancellationToken = default)
+	{
+		var entry = await Client.InsertEntryAsync(Command, resultRequired, cancellationToken).ConfigureAwait(false);
+		var result = ConvertResult(entry);
+		if (Client.IsBatchRequest && entry is not null && result is not null && !ReferenceEquals(result, entry))
+		{
+			// inside a batch the result is a placeholder for the inserted entity; later operations reference it as $<Content-ID>
+			Client.BatchEntries?.GetOrAdd(result, entry);
+		}
+
+		return result;
+	}
 
 	/// <inheritdoc />
 	public async Task<T?> UpdateEntryAsync(bool resultRequired = true, CancellationToken cancellationToken = default)

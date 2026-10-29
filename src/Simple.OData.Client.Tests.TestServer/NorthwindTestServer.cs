@@ -52,6 +52,7 @@ public sealed class NorthwindTestServer : IAsyncDisposable
 		builder.Services.AddSingleton<NorthwindData>();
 		builder.Services.AddSingleton<AsyncMonitorStore>();
 		builder.Services.AddSingleton<SelfClient>();
+		builder.Services.AddSingleton<RequestRecorder>();
 		builder.Services
 			.AddControllers(options => options.Filters.Add<AggregationResultFilter>())
 			.AddApplicationPart(typeof(NorthwindTestServer).Assembly)
@@ -73,7 +74,7 @@ public sealed class NorthwindTestServer : IAsyncDisposable
 
 		var app = builder.Build();
 		app.UseODataRouteDebug();
-		app.UseODataBatching();
+		RequestRecorder.Use(app, x => x.UseODataBatching());
 		app.UseRouting();
 		app.MapControllers();
 		app.MapODataServiceDocument("odata", model);
@@ -94,6 +95,12 @@ public sealed class NorthwindTestServer : IAsyncDisposable
 
 	/// <summary>Restores the seed data.</summary>
 	public void ResetData() => _app.Services.GetRequiredService<NorthwindData>().Reset();
+
+	/// <summary>The requests received since the last <see cref="ClearRequests"/>, batch sub-requests included.</summary>
+	public IReadOnlyList<RecordedRequest> Requests => _app.Services.GetRequiredService<RequestRecorder>().Requests;
+
+	/// <summary>Forgets the recorded requests.</summary>
+	public void ClearRequests() => _app.Services.GetRequiredService<RequestRecorder>().Clear();
 
 	public async ValueTask DisposeAsync()
 	{

@@ -20,7 +20,7 @@ public sealed class TypedDataAggregationTests
 	[Fact]
 	public void Filter() =>
 		Apply(b => b.Filter(x => x.ProductName.Contains("ai")).Filter(x => x.ProductName.StartsWith("Ch")))
-			.Should().Be("Products?$apply=filter%28contains%28ProductName%2C%27ai%27%29%20and%20startswith%28ProductName%2C%27Ch%27%29%29");
+			.Should().Be("Products?$apply=filter%28contains%28ProductName%2C'ai'%29%20and%20startswith%28ProductName%2C'Ch'%29%29");
 
 	[Fact]
 	public void AggregateFunctions()
@@ -77,7 +77,7 @@ public sealed class TypedDataAggregationTests
 				Category = new Category { CategoryName = x.Category.CategoryName },
 				AverageUnitPrice = a.Average(x.UnitPrice),
 			}))
-			.Should().Be("Products?$apply=filter%28%28Category%2FCategoryName%20in%20%28%27Beverage%27%2C%27Food%27%29%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29");
+			.Should().Be("Products?$apply=filter%28%28Category%2FCategoryName%20in%20%28'Beverage'%2C'Food'%29%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29");
 	}
 
 	[Fact]
@@ -106,7 +106,7 @@ public sealed class TypedDataAggregationTests
 		var third = new DataAggregationBuilder<ProductGroupedByCategory>();
 		third.Filter(x => x.AverageUnitPrice > 100);
 		new FluentCommand().For("Products").Apply(first).Apply(second).Apply(third).Resolve(Session).Format()
-			.Should().Be("Products?$apply=filter%28contains%28Category%2FCategoryName%2C%27ab%27%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29%2Ffilter%28AverageUnitPrice%20gt%20100%29");
+			.Should().Be("Products?$apply=filter%28contains%28Category%2FCategoryName%2C'ab'%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29%2Ffilter%28AverageUnitPrice%20gt%20100%29");
 	}
 
 	[Fact]

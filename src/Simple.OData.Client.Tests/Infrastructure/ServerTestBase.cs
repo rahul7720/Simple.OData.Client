@@ -1,4 +1,5 @@
 using Simple.OData.Client.Tests.TestServer;
+using Simple.OData.Client.Tests.TestServer.Infrastructure;
 
 namespace Simple.OData.Client.Tests.Infrastructure;
 
@@ -11,9 +12,18 @@ public abstract class ServerTestBase
 		ArgumentNullException.ThrowIfNull(fixture);
 		Server = fixture.Server;
 		Server.ResetData();
+		Server.ClearRequests();
 	}
 
 	protected NorthwindTestServer Server { get; }
+
+	/// <summary>The requests the server received during this test, batch sub-requests included.</summary>
+	protected IReadOnlyList<RecordedRequest> Requests => Server.Requests;
+
+	/// <summary>The recorded request with the given method whose path ends with <paramref name="pathSuffix"/>.</summary>
+	protected RecordedRequest Request(string method, string pathSuffix) =>
+		Requests.LastOrDefault(x => !x.IsBatch && x.Method == method && x.Path.EndsWith(pathSuffix, StringComparison.Ordinal))
+		?? throw new InvalidOperationException($"No {method} request ending with '{pathSuffix}' was recorded. Recorded: {string.Join(", ", Requests.Select(x => x.Method + " " + x.Path))}");
 
 	protected static Uri BaseUri => NorthwindTestServer.BaseAddress;
 

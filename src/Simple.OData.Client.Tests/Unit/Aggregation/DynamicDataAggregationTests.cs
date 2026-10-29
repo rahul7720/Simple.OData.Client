@@ -18,17 +18,17 @@ public sealed class DynamicDataAggregationTests
 	[Fact]
 	public void FilterText() =>
 		Check(ODataDynamicDataAggregation.Builder.Filter("contains(ProductName,'ai')").Filter("startswith(ProductName,'Ch')"),
-			"Products?$apply=filter%28contains%28ProductName%2C%27ai%27%29%20and%20startswith%28ProductName%2C%27Ch%27%29%29");
+			"Products?$apply=filter%28contains%28ProductName%2C'ai'%29%20and%20startswith%28ProductName%2C'Ch'%29%29");
 
 	[Fact]
 	public void FilterExpressions()
 	{
 		var x = ODataDynamic.Expression;
-		Check(ODataDynamicDataAggregation.Builder.Filter(x.ProductName.Contains("ai")), "Products?$apply=filter%28contains%28ProductName%2C%27ai%27%29%29");
+		Check(ODataDynamicDataAggregation.Builder.Filter(x.ProductName.Contains("ai")), "Products?$apply=filter%28contains%28ProductName%2C'ai'%29%29");
 		Check(ODataDynamicDataAggregation.Builder.Filter(x.ProductName.Contains("ai")).Filter(x.ProductName.StartsWith("Ch")),
-			"Products?$apply=filter%28contains%28ProductName%2C%27ai%27%29%20and%20startswith%28ProductName%2C%27Ch%27%29%29");
+			"Products?$apply=filter%28contains%28ProductName%2C'ai'%29%20and%20startswith%28ProductName%2C'Ch'%29%29");
 		Check(ODataDynamicDataAggregation.Builder.Filter("UnitPrice gt 1").Filter(x.ProductName.Contains("ai")),
-			"Products?$apply=filter%28UnitPrice%20gt%201%20and%20contains%28ProductName%2C%27ai%27%29%29");
+			"Products?$apply=filter%28UnitPrice%20gt%201%20and%20contains%28ProductName%2C'ai'%29%29");
 	}
 
 	[Fact]
@@ -89,7 +89,7 @@ public sealed class DynamicDataAggregationTests
 			.Apply(ODataDynamicDataAggregation.Builder.Filter("contains(Category/CategoryName,'v')").CreateBuilder())
 			.Apply(ODataDynamicDataAggregation.Builder.GroupBy(new { x.Category.CategoryName, AverageUnitPrice = a.Average(x.UnitPrice) }).CreateBuilder());
 		command.Resolve(Session).Format()
-			.Should().Be("Products?$apply=filter%28contains%28Category%2FCategoryName%2C%27v%27%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29");
+			.Should().Be("Products?$apply=filter%28contains%28Category%2FCategoryName%2C'v'%29%29%2Fgroupby%28%28Category%2FCategoryName%29%2Caggregate%28UnitPrice%20with%20average%20as%20AverageUnitPrice%29%29");
 	}
 
 	[Fact]

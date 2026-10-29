@@ -177,6 +177,49 @@ public sealed class ResponseReaderTests
 	}
 
 	[Fact]
+	public async Task ReadsJsonBatchResponse()
+	{
+		var entry = $$$"""{{{Open(Northwind, "Products/$entity")}}},"ProductID":1,"ProductName":"Chai"}""";
+		var body = """{"responses":[{"id":"1","status":200,"headers":{"content-type":"application/json; odata.metadata=minimal","odata-version":"4.01"},"body":""" + entry +
+			"""},{"id":"2","status":404,"headers":{"content-type":"application/json"},"body":{"error":{"code":"404","message":"Not found"}}},{"id":"3","status":204,"headers":{}}]}""";
+		var response = await new ResponseReader(Northwind).ReadBatchAsync(Json(body), CancellationToken.None);
+		response.Batch.Should().HaveCount(3);
+		response.Batch![0].AsEntry(false)!["ProductName"].Should().Be("Chai");
+		response.Batch[1].StatusCode.Should().Be(404);
+		response.Batch[1].Error!.Message.Should().Be("Not found");
+		response.Batch[1].Exception.Should().BeOfType<WebRequestException>();
+		response.Batch[2].StatusCode.Should().Be(204);
+	}
+
+	[Fact]
+	public async Task ReadsRawOperationBodiesInBatchResponse()
+	{
+		var body = string.Join("\r\n",
+			"--batchresponse_1",
+			"Content-Type: application/http",
+			"Content-Transfer-Encoding: binary",
+			"",
+			"HTTP/1.1 200 OK",
+			"Content-Type: image/png",
+			"",
+			"image-bytes",
+			"--batchresponse_1",
+			"Content-Type: application/http",
+			"Content-Transfer-Encoding: binary",
+			"",
+			"HTTP/1.1 200 OK",
+			"Content-Type: text/plain",
+			"",
+			"42",
+			"--batchresponse_1--",
+			"");
+		var response = await new ResponseReader(Northwind).ReadBatchAsync(Json(body, "multipart/mixed; boundary=batchresponse_1"), CancellationToken.None);
+		response.Batch.Should().HaveCount(2);
+		response.Batch![0].AsScalar<byte[]>().Should().Equal("image-bytes"u8.ToArray());
+		response.Batch[1].AsScalar<int>().Should().Be(42);
+	}
+
+	[Fact]
 	public async Task ReadsMultipartBatchResponse()
 	{
 		var entry = $$$"""{{{Open(Northwind, "Products/$entity")}}},"ProductID":1,"ProductName":"Chai"}""";

@@ -52,7 +52,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(commandText);
 		if (IsBatch)
 		{
-			await CreateBatchOperationMessageAsync(RestVerbs.Get, null, null, commandText, true).ConfigureAwait(false);
+			await CreateBatchOperationMessageAsync(RestVerbs.Get, null, null, commandText, true, headers).ConfigureAwait(false);
 		}
 
 		return new ODataRequest(RestVerbs.Get, session, commandText, headers) { ReturnsScalarResult = scalarResult, ResultRequired = true };
@@ -63,7 +63,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(commandText);
 		ArgumentNullException.ThrowIfNull(stream);
 		var message = IsBatch
-			? await CreateBatchOperationMessageAsync(RestVerbs.Put, null, null, commandText, false).ConfigureAwait(false)
+			? await CreateBatchOperationMessageAsync(RestVerbs.Put, null, null, commandText, false, headers).ConfigureAwait(false)
 			: new ODataRequestMessage();
 		if (IsBatch && contentType is not null)
 		{
@@ -93,7 +93,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(commandText);
 		ArgumentNullException.ThrowIfNull(entryData);
 		commandText = StripTypeSegment(commandText);
-		var (content, contentType) = await WriteEntryContentAsync(RestVerbs.Post, collection, commandText, entryData, resultRequired).ConfigureAwait(false);
+		var (content, contentType) = await WriteEntryContentAsync(RestVerbs.Post, collection, commandText, entryData, resultRequired, headers).ConfigureAwait(false);
 		return WithPreferences(new ODataRequest(RestVerbs.Post, session, commandText, entryData, content, contentType, headers) { ResultRequired = resultRequired });
 	}
 
@@ -111,7 +111,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		}
 
 		var method = usePatch ? RestVerbs.Patch : RestVerbs.Put;
-		var (content, contentType) = await WriteEntryContentAsync(method, collection, entryIdent, entryData, resultRequired).ConfigureAwait(false);
+		var (content, contentType) = await WriteEntryContentAsync(method, collection, entryIdent, entryData, resultRequired, headers).ConfigureAwait(false);
 		return WithPreferences(new ODataRequest(method, session, entryIdent, entryData, content, contentType, headers)
 		{
 			ResultRequired = resultRequired,
@@ -125,7 +125,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(entryIdent);
 		if (IsBatch)
 		{
-			await CreateBatchOperationMessageAsync(RestVerbs.Delete, collection, null, entryIdent, false).ConfigureAwait(false);
+			await CreateBatchOperationMessageAsync(RestVerbs.Delete, collection, null, entryIdent, false, headers).ConfigureAwait(false);
 		}
 
 		return new ODataRequest(RestVerbs.Delete, session, entryIdent, headers)
@@ -145,7 +145,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		var commandText = FormatLinkPath(entryIdent, navigationName, null);
 
 		var message = IsBatch
-			? await CreateBatchOperationMessageAsync(method, null, null, commandText, false).ConfigureAwait(false)
+			? await CreateBatchOperationMessageAsync(method, null, null, commandText, false, headers).ConfigureAwait(false)
 			: new ODataRequestMessage();
 		using (var messageWriter = new ODataMessageWriter(message, WriterSettings(), Model))
 		{
@@ -166,7 +166,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		var commandText = FormatLinkPath(entryIdent, navigationName, linkIdent);
 		if (IsBatch)
 		{
-			await CreateBatchOperationMessageAsync(RestVerbs.Delete, null, null, commandText, false).ConfigureAwait(false);
+			await CreateBatchOperationMessageAsync(RestVerbs.Delete, null, null, commandText, false, headers).ConfigureAwait(false);
 		}
 
 		return new ODataRequest(RestVerbs.Delete, session, commandText, headers) { IsLink = true };
@@ -178,7 +178,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(functionName);
 		if (IsBatch)
 		{
-			await CreateBatchOperationMessageAsync(RestVerbs.Get, null, null, commandText, true).ConfigureAwait(false);
+			await CreateBatchOperationMessageAsync(RestVerbs.Get, null, null, commandText, true, headers).ConfigureAwait(false);
 		}
 
 		return new ODataRequest(RestVerbs.Get, session, commandText, headers) { ResultRequired = true };
@@ -189,7 +189,7 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		ArgumentNullException.ThrowIfNull(commandText);
 		ArgumentNullException.ThrowIfNull(actionName);
 		var message = IsBatch
-			? await CreateBatchOperationMessageAsync(RestVerbs.Post, null, null, commandText, resultRequired).ConfigureAwait(false)
+			? await CreateBatchOperationMessageAsync(RestVerbs.Post, null, null, commandText, resultRequired, headers).ConfigureAwait(false)
 			: new ODataRequestMessage();
 
 		Stream? content = null;
@@ -220,10 +220,10 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 
 	// ---- entries ----------------------------------------------------------------------------------------------
 
-	private async Task<(Stream? Content, string? ContentType)> WriteEntryContentAsync(string method, string collection, string commandText, IDictionary<string, object?> entryData, bool resultRequired)
+	private async Task<(Stream? Content, string? ContentType)> WriteEntryContentAsync(string method, string collection, string commandText, IDictionary<string, object?> entryData, bool resultRequired, IDictionary<string, string>? headers)
 	{
 		var message = IsBatch
-			? await CreateBatchOperationMessageAsync(method, collection, entryData, commandText, resultRequired).ConfigureAwait(false)
+			? await CreateBatchOperationMessageAsync(method, collection, entryData, commandText, resultRequired, headers).ConfigureAwait(false)
 			: new ODataRequestMessage();
 
 		var entityType = Metadata.GetEntityType(collection);
@@ -654,8 +654,8 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 
 	// ---- helpers ----------------------------------------------------------------------------------------------
 
-	private async Task<IODataRequestMessage> CreateBatchOperationMessageAsync(string method, string? collection, IDictionary<string, object?>? entryData, string commandText, bool resultRequired) =>
-		await batchWriter!.Value.CreateOperationMessageAsync(Utils.CreateAbsoluteUri(session.BaseUri, commandText), method, collection, entryData, resultRequired).ConfigureAwait(false);
+	private async Task<IODataRequestMessage> CreateBatchOperationMessageAsync(string method, string? collection, IDictionary<string, object?>? entryData, string commandText, bool resultRequired, IDictionary<string, string>? headers) =>
+		await batchWriter!.Value.CreateOperationMessageAsync(Utils.CreateAbsoluteUri(session.BaseUri, commandText), method, collection, entryData, resultRequired, headers).ConfigureAwait(false);
 
 	/// <summary>In batch mode ODataLib must dispose each operation's stream before the batch writer accepts the next one.</summary>
 	private ODataMessageWriterSettings WriterSettings()

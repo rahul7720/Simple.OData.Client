@@ -141,14 +141,14 @@ internal sealed class CommandUriBuilder(Session session) : IUriValueFormatter
 	public string ConvertValueToUriLiteral(object? value, bool escapeDataString) => UriLiteralFormatter.Format(session, value, escapeDataString);
 
 	private static string EscapeUnescapedString(string text) =>
-		text.AsSpan().ContainsAny(ReservedUriCharacters) ? Uri.EscapeDataString(text) : text;
+		text.AsSpan().ContainsAny(ReservedUriCharacters) ? UriText.Escape(text) : text;
 
 	private void AppendKey(StringBuilder path, IReadOnlyDictionary<string, object?> key, bool isAlternateKey)
 	{
 		if (!isAlternateKey && key.Count == 1 && session.Settings.KeyAsSegment)
 		{
 			var value = key.Values.First();
-			path.Append('/').Append(value is string text ? Uri.EscapeDataString(text) : ConvertValueToUriLiteral(value, true));
+			path.Append('/').Append(value is string text ? UriText.Escape(text) : ConvertValueToUriLiteral(value, true));
 			return;
 		}
 
@@ -190,7 +190,7 @@ internal sealed class CommandUriBuilder(Session session) : IUriValueFormatter
 			else if (UriLiteralFormatter.IsStructuredValue(value))
 			{
 				var alias = "@p" + (++aliasIndex).ToString(CultureInfo.InvariantCulture);
-				queryClauses.Add($"{alias}={Uri.EscapeDataString(UriLiteralFormatter.FormatJson(session, value!))}");
+				queryClauses.Add($"{alias}={UriText.Escape(UriLiteralFormatter.FormatJson(session, value!))}");
 				path.Append(alias);
 			}
 			else

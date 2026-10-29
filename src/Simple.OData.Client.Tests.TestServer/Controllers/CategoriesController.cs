@@ -37,18 +37,21 @@ public class CategoriesController(NorthwindData data) : NorthwindController(data
 			}
 
 			Data.Categories.Add(category);
-			foreach (var product in category.Products)
+			foreach (var product in category.Products.ToList())
 			{
-				if (product.ProductID == 0 || !Data.Products.Contains(product))
+				// a bound product (Products@odata.bind) arrives as a stub carrying only its key
+				var existing = Data.Products.FirstOrDefault(x => x.ProductID == product.ProductID);
+				if (existing is not null)
 				{
-					product.ProductID = product.ProductID == 0 ? Data.NextProductId() : product.ProductID;
-					product.CategoryID = category.CategoryID;
-					product.RowVersion = Data.BumpRowVersion();
-					if (!Data.Products.Any(x => x.ProductID == product.ProductID))
-					{
-						Data.Products.Add(product);
-					}
+					existing.CategoryID = category.CategoryID;
+					existing.RowVersion = Data.BumpRowVersion();
+					continue;
 				}
+
+				product.ProductID = product.ProductID == 0 ? Data.NextProductId() : product.ProductID;
+				product.CategoryID = category.CategoryID;
+				product.RowVersion = Data.BumpRowVersion();
+				Data.Products.Add(product);
 			}
 
 			Data.Relink();

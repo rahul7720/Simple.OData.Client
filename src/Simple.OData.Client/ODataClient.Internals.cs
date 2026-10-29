@@ -123,7 +123,7 @@ public sealed partial class ODataClient
 		}
 
 		using var response = await Runner.ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
-		var batchResponse = await new ResponseReader(Session).ReadAsync(response, null, cancellationToken).ConfigureAwait(false);
+		var batchResponse = await new ResponseReader(Session).ReadBatchAsync(response, cancellationToken).ConfigureAwait(false);
 		await AssignBatchResultsAsync(batchResponse, actions, responseIndexes).ConfigureAwait(false);
 	}
 
@@ -256,10 +256,11 @@ public sealed partial class ODataClient
 		}
 	}
 
+	/// <summary>Recovers the filter of a command text produced by <c>GetCommandTextAsync</c>; the stored filter is unescaped so it is escaped exactly once when sent.</summary>
 	private static string ExtractFilter(string collection, string commandText)
 	{
 		var prefix = collection + "?" + ODataLiteral.Filter + "=";
-		return commandText.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? commandText[prefix.Length..] : commandText;
+		return commandText.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? Uri.UnescapeDataString(commandText[prefix.Length..]) : commandText;
 	}
 
 	/// <summary>Strips the <c>__annotations</c> entries a previous read may have added, recursively.</summary>

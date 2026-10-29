@@ -23,7 +23,7 @@ internal sealed class RequestRunner(Session session)
 
 		try
 		{
-			var message = request.RequestMessage;
+			var message = request.PrepareForSend();
 			PrepareHeaders(request, message);
 			await RunBeforeRequestAsync(message, cancellationToken).ConfigureAwait(false);
 			await TraceRequestAsync(message, cancellationToken).ConfigureAwait(false);
