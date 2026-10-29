@@ -33,8 +33,8 @@
 		<Copyright>Copyright © 2012-2026 Simple.OData.Client contributors. All rights reserved.</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageIcon>simple-odata-client.png</PackageIcon>
-		<PackageProjectUrl>https://github.com/simple-odata-client/Simple.OData.Client</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/simple-odata-client/Simple.OData.Client.git</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/rahul7720/Simple.OData.Client</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/rahul7720/Simple.OData.Client</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>odata;odata-v4;odata-client;simpleodata</PackageTags>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>

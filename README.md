@@ -1,7 +1,7 @@
 # Simple.OData.Client
 
 <p align="center">
-<a href="https://www.nuget.org/packages/Simple.OData.Client/"><img src="https://img.shields.io/nuget/v/Simple.OData.Client.svg" alt="current release"><img src="https://img.shields.io/nuget/dt/Simple.OData.Client.svg" alt="downloads" /></a>
+<a href="https://github.com/rahul7720/Simple.OData.Client/releases"><img src="https://img.shields.io/github/v/release/rahul7720/Simple.OData.Client" alt="current release"></a> <a href="https://github.com/rahul7720/Simple.OData.Client/pkgs/nuget/Nexus.Odata.Client"><img src="https://img.shields.io/badge/GitHub%20Packages-Nexus.Odata.Client-blue" alt="GitHub Packages"></a>
 </p>
 
 Simple.OData.Client is a metadata-driven OData **V4 / V4.01** client for **.NET 10**. It reads the service
@@ -26,8 +26,11 @@ in-process ASP.NET Core OData service.
 
 ## Install
 
+The package is published to GitHub Packages as `Nexus.Odata.Client` (the assembly and namespaces stay `Simple.OData.Client`).
+
 ```bash
-dotnet add package Simple.OData.Client --version 7.0.0
+dotnet nuget add source https://nuget.pkg.github.com/rahul7720/index.json --name github-rahul7720 --username <your-github-user> --password <a-github-token-with-read:packages> --store-password-in-clear-text
+dotnet add package Nexus.Odata.Client --version 7.0.0
 ```
 
 ## Quick start

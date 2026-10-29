@@ -3,9 +3,9 @@
 	<PropertyGroup>
 		<RootNamespace>Simple.OData.Client</RootNamespace>
 		<AssemblyName>Simple.OData.Client</AssemblyName>
-		<PackageId>Simple.OData.Client</PackageId>
+		<PackageId>Nexus.Odata.Client</PackageId>
 		<Version>7.0.0</Version>
-		<Title>Simple.OData.Client</Title>
+		<Title>Nexus.Odata.Client</Title>
 		<Summary>A metadata-driven OData V4 / V4.01 client for .NET 10 that needs no generated proxy classes.</Summary>
 		<Description>
 			Simple.OData.Client is a metadata-driven OData V4 and V4.01 client for .NET 10. It reads the service metadata
@@ -20,7 +20,7 @@
 			Simple.OData.Client.ODataBatch
 		</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>See https://github.com/simple-odata-client/Simple.OData.Client/blob/master/RELEASE_NOTES.md</PackageReleaseNotes>
+		<PackageReleaseNotes>See https://github.com/rahul7720/Simple.OData.Client/releases</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>

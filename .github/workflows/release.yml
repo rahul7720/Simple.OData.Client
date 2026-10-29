@@ -1,10 +1,11 @@
 name: Release
 
-# Builds, tests and packs the solution in Release and creates the GitHub release for the
-# version in src/Simple.OData.Client/Simple.OData.Client.csproj, with the .nupkg and .snupkg attached.
+# Builds, tests and packs the solution in Release, creates the GitHub release for the version in
+# src/Simple.OData.Client/Simple.OData.Client.csproj with the .nupkg and .snupkg attached, and publishes
+# the package to GitHub Packages (nuget.pkg.github.com/<owner>).
 #
-# - Run it manually (workflow_dispatch) on the branch to release: the release is created for the
-#   commit that ran, and the v<version> tag is created at that commit if it does not exist yet.
+# - Run it manually (workflow_dispatch) on the branch to release: the release is created for the commit
+#   that ran, and the v<version> tag is created at that commit if it does not exist yet.
 # - Or push a v<version> tag: the tag must match <Version> in the project file.
 # Packages are pushed to nuget.org only when the manual run opts in and NUGET_API_KEY is set.
 
@@ -13,14 +14,20 @@ on:
     tags: [ "v*" ]
   workflow_dispatch:
     inputs:
+      recreate_release:
+        description: "If the release and tag already exist, delete them and recreate them at this commit"
+        required: false
+        type: boolean
+        default: false
       publish_to_nuget:
-        description: "Also push the packages to nuget.org (requires the NUGET_API_KEY secret)"
+        description: "Also push the package to nuget.org (requires the NUGET_API_KEY secret)"
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   release:
@@ -33,9 +40,10 @@ jobs:
       id: version
       run: |
         VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Simple.OData.Client/Simple.OData.Client.csproj)
+        PACKAGE_ID=$(sed -n 's:.*<PackageId>\(.*\)</PackageId>.*:\1:p' src/Simple.OData.Client/Simple.OData.Client.csproj)
         TAG="v$VERSION"
-        if [ -z "$VERSION" ]; then
-          echo "::error::No <Version> found in Simple.OData.Client.csproj"
+        if [ -z "$VERSION" ] || [ -z "$PACKAGE_ID" ]; then
+          echo "::error::No <Version> or <PackageId> found in Simple.OData.Client.csproj"
           exit 1
         fi
         if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
@@ -43,6 +51,7 @@ jobs:
           exit 1
         fi
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "package_id=$PACKAGE_ID" >> "$GITHUB_OUTPUT"
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
     - name: Setup .NET
@@ -84,12 +93,31 @@ jobs:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TAG: ${{ steps.version.outputs.tag }}
         VERSION: ${{ steps.version.outputs.version }}
+        PACKAGE_ID: ${{ steps.version.outputs.package_id }}
+        RECREATE: ${{ github.event_name == 'workflow_dispatch' && inputs.recreate_release }}
       run: |
+        if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if [ "$RECREATE" = "true" ]; then
+            echo "Release $TAG exists; deleting it and its tag so they can be recreated at $GITHUB_SHA"
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          else
+            echo "::error::Release $TAG already exists. Re-run with recreate_release to replace it."
+            exit 1
+          fi
+        fi
         gh release create "$TAG" packages/*.nupkg packages/*.snupkg \
           --repo "$GITHUB_REPOSITORY" \
           --target "$GITHUB_SHA" \
-          --title "Simple.OData.Client $VERSION" \
+          --title "$PACKAGE_ID $VERSION" \
           --notes-file release-notes.md
+
+    - name: Publish to GitHub Packages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        dotnet nuget push "packages/*.nupkg" --no-symbols --skip-duplicate \
+          --source "https://nuget.pkg.github.com/$GITHUB_REPOSITORY_OWNER/index.json" \
+          --api-key "$GITHUB_TOKEN"
 
     - name: Push to NuGet
       if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_nuget }}
