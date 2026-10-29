@@ -177,6 +177,16 @@ public sealed class ResponseReaderTests
 	}
 
 	[Fact]
+	public async Task ReadsUndeclaredPropertiesByDefault()
+	{
+		// $apply and $compute results carry properties the entity type does not declare
+		var body = $$$"""{{{Open(Northwind, "Products(CategoryID,Count)")}}},"value":[{"CategoryID":1,"Count":2},{"CategoryID":2,"Count":7}]}""";
+		var entries = (await ReadAsync(Northwind, Json(body))).AsEntries(false);
+		entries.Should().HaveCount(2);
+		entries[0]["Count"].Should().Be(2);
+	}
+
+	[Fact]
 	public async Task ReadsJsonBatchResponse()
 	{
 		var entry = $$$"""{{{Open(Northwind, "Products/$entity")}}},"ProductID":1,"ProductName":"Chai"}""";

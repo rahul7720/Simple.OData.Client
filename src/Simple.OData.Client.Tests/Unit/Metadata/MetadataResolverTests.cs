@@ -73,6 +73,14 @@ public class MetadataResolverTests
 	}
 
 	[Fact]
+	public void GetAlternateKeyPropertyNamesFromJsonCsdlWithStringPropertyRefs()
+	{
+		// ASP.NET Core OData writes the PropertyRef Name as a plain string instead of a $PropertyPath
+		var metadata = TestMetadata.Resolver("AlternateKeysJson.json");
+		metadata.GetAlternateKeyPropertyNames("Products").Should().BeEquivalentTo(new[] { new[] { "ProductName" } });
+	}
+
+	[Fact]
 	public void GetAlternateKeyPropertyNames()
 	{
 		var metadata = TestMetadata.Resolver("Northwind4WithAlternateKeys.xml");

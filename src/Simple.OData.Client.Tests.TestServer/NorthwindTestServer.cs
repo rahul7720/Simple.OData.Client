@@ -75,6 +75,7 @@ public sealed class NorthwindTestServer : IAsyncDisposable
 		var app = builder.Build();
 		app.UseODataRouteDebug();
 		RequestRecorder.Use(app, x => x.UseODataBatching());
+		app.UseOmitValues();
 		app.UseRouting();
 		app.MapControllers();
 		app.MapODataServiceDocument("odata", model);

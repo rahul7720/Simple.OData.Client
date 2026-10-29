@@ -235,7 +235,7 @@ public sealed class ODataClientSettings
 	public bool Ieee754Compatible { get; set; }
 
 	/// <summary>Payload validations performed when reading and writing.</summary>
-	public ValidationKinds Validations { get; set; } = ValidationKinds.All;
+	public ValidationKinds Validations { get; set; } = ValidationKinds.ThrowOnDuplicatePropertyNames | ValidationKinds.ThrowIfTypeConflictsWithMetadata;
 
 	/// <summary>What goes into the message of a <c>WebRequestException</c>.</summary>
 	public WebRequestExceptionMessageSource WebRequestExceptionMessageSource { get; set; }

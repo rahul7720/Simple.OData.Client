@@ -117,7 +117,7 @@ public class SettingsTests
 		settings.PreferredUpdateMethod.Should().Be(ODataUpdateMethod.Patch);
 		settings.BulkOperationMode.Should().Be(BulkOperationMode.ClientSide);
 		settings.ReadUntypedAsString.Should().BeTrue();
-		settings.Validations.Should().Be(ValidationKinds.All);
+		settings.Validations.Should().Be(ValidationKinds.ThrowOnDuplicatePropertyNames | ValidationKinds.ThrowIfTypeConflictsWithMetadata, "undeclared properties ($compute, $apply, server extensions) must not fail a read");
 		settings.NameMatchResolver.Should().BeSameAs(ODataNameMatchResolver.NotStrict);
 		settings.RequestTimeout.Should().Be(TimeSpan.Zero);
 		settings.AsyncPollingInterval.Should().Be(TimeSpan.FromSeconds(1));

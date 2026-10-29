@@ -195,6 +195,46 @@ internal sealed class EdmMetadataIndex
 	private StructuredTypeIndex StructuredType(IEdmStructuredType type) =>
 		_structuredTypes.GetOrAdd(type, t => new StructuredTypeIndex(_model, t, _resolver));
 
+	/// <summary>
+	/// Reads the <c>AlternateKeys</c> annotations (community and core vocabularies). The property references are path
+	/// expressions in CSDL XML, but some services (ASP.NET Core OData's CSDL JSON) write them as plain strings.
+	/// </summary>
+	private static IReadOnlyList<string>[] ReadAlternateKeys(IEdmModel model, IEdmEntityType entityType)
+	{
+		var keys = new List<IReadOnlyList<string>>();
+		foreach (var annotation in model.FindVocabularyAnnotations(entityType).Where(x => x.Term.Name == "AlternateKeys"))
+		{
+			if (annotation.Value is not IEdmCollectionExpression alternateKeys)
+			{
+				continue;
+			}
+
+			foreach (var alternateKey in alternateKeys.Elements.OfType<IEdmRecordExpression>())
+			{
+				var names = alternateKey.Properties.FirstOrDefault(x => x.Name == "Key")?.Value is IEdmCollectionExpression refs
+					? refs.Elements.OfType<IEdmRecordExpression>()
+						.Select(x => PropertyRefName(x.Properties.FirstOrDefault(p => p.Name == "Name")?.Value))
+						.Where(x => !string.IsNullOrEmpty(x))
+						.Select(x => x!)
+						.ToArray()
+					: [];
+				if (names.Length > 0)
+				{
+					keys.Add(names);
+				}
+			}
+		}
+
+		return [.. keys];
+	}
+
+	private static string? PropertyRefName(IEdmExpression? expression) => expression switch
+	{
+		IEdmPathExpression path => string.Join('/', path.PathSegments),
+		IEdmStringConstantExpression text => text.Value,
+		_ => null,
+	};
+
 	private sealed class StructuredTypeIndex
 	{
 		public StructuredTypeIndex(IEdmModel model, IEdmStructuredType type, INameMatchResolver resolver)
@@ -204,9 +244,7 @@ internal sealed class EdmMetadataIndex
 			if (type is IEdmEntityType entityType)
 			{
 				KeyNames = entityType.KeyOwner().DeclaredKey?.Select(x => x.Name).ToArray() ?? [];
-				AlternateKeyNames = model.GetAlternateKeysAnnotation(entityType)
-					.Select(x => (IReadOnlyList<string>)x.Keys.ToArray())
-					.ToArray();
+				AlternateKeyNames = ReadAlternateKeys(model, entityType);
 			}
 			else
 			{
