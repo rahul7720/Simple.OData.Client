@@ -19,7 +19,12 @@ public sealed class ExpressionFunction
 		ArgumentException.ThrowIfNullOrEmpty(functionName);
 		ArgumentNullException.ThrowIfNull(arguments);
 		FunctionName = functionName;
-		Arguments = arguments.Select(x => (ODataExpression?)ODataExpression.FromValue(x)).ToList();
+		Arguments = arguments.Select(static x => x switch
+		{
+			null => null,
+			ODataExpression expression => expression,
+			_ => ODataExpression.FromValue(x),
+		}).ToList();
 	}
 
 	/// <summary>Creates a function call whose arguments are LINQ expressions.</summary>

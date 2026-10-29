@@ -8,9 +8,6 @@ namespace Simple.OData.Client.TypeSystem;
 /// </summary>
 internal static class DictionaryMapper
 {
-	/// <summary>Hook installed by the dynamic API to create <c>DynamicODataEntry</c> instances.</summary>
-	internal static Func<IDictionary<string, object?>, TypeCache, ODataEntry>? DynamicEntryFactory { get; set; }
-
 	public static object? ToObject(TypeCache typeCache, IDictionary<string, object?>? source, Type type, bool dynamicObject)
 	{
 		ArgumentNullException.ThrowIfNull(type);
@@ -281,5 +278,5 @@ internal static class DictionaryMapper
 	}
 
 	private static ODataEntry CreateODataEntry(TypeCache typeCache, IDictionary<string, object?> source, bool dynamicObject) =>
-		dynamicObject && DynamicEntryFactory is { } factory ? factory(source, typeCache) : new ODataEntry(source);
+		dynamicObject ? new DynamicODataEntry(source, typeCache) : new ODataEntry(source);
 }
