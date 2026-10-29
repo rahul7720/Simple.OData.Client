@@ -1,16 +1,49 @@
-name: Release Build & Package
+name: Release
+
+# Builds, tests and packs the solution in Release and creates the GitHub release for the
+# version in src/Simple.OData.Client/Simple.OData.Client.csproj, with the .nupkg and .snupkg attached.
+#
+# - Run it manually (workflow_dispatch) on the branch to release: the release is created for the
+#   commit that ran, and the v<version> tag is created at that commit if it does not exist yet.
+# - Or push a v<version> tag: the tag must match <Version> in the project file.
+# Packages are pushed to nuget.org only when the manual run opts in and NUGET_API_KEY is set.
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "releases/*" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      publish_to_nuget:
+        description: "Also push the packages to nuget.org (requires the NUGET_API_KEY secret)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Resolve the version
+      id: version
+      run: |
+        VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Simple.OData.Client/Simple.OData.Client.csproj)
+        TAG="v$VERSION"
+        if [ -z "$VERSION" ]; then
+          echo "::error::No <Version> found in Simple.OData.Client.csproj"
+          exit 1
+        fi
+        if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
+          echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$VERSION</Version> in Simple.OData.Client.csproj"
+          exit 1
+        fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -21,13 +54,13 @@ jobs:
       run: dotnet restore src/Simple.OData.Client.slnx
 
     - name: Build
-      run: dotnet build src/Simple.OData.Client.slnx --no-restore --configuration Release /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
+      run: dotnet build src/Simple.OData.Client.slnx --no-restore --configuration Release
 
     - name: Test
       run: dotnet test src/Simple.OData.Client.slnx --no-build --configuration Release
 
     - name: Pack
-      run: dotnet pack src/Simple.OData.Client/Simple.OData.Client.csproj --no-build --configuration Release --output packages /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
+      run: dotnet pack src/Simple.OData.Client/Simple.OData.Client.csproj --no-build --configuration Release --output packages
 
     - name: Upload packages
       uses: actions/upload-artifact@v4
@@ -35,8 +68,36 @@ jobs:
         name: nuget-packages
         path: packages
 
+    - name: Collect release notes
+      env:
+        TAG: ${{ steps.version.outputs.tag }}
+      run: |
+        if [ -f "docs/releases/$TAG.md" ]; then
+          cp "docs/releases/$TAG.md" release-notes.md
+        else
+          awk '/^#### /{ section++ } section == 1' RELEASE_NOTES.md > release-notes.md
+        fi
+        cat release-notes.md
+
+    - name: Create the GitHub release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG: ${{ steps.version.outputs.tag }}
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        gh release create "$TAG" packages/*.nupkg packages/*.snupkg \
+          --repo "$GITHUB_REPOSITORY" \
+          --target "$GITHUB_SHA" \
+          --title "Simple.OData.Client $VERSION" \
+          --notes-file release-notes.md
+
     - name: Push to NuGet
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_nuget }}
       env:
         NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      if: ${{ env.NUGET_API_KEY != '' }}
-      run: dotnet nuget push "packages/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
+      run: |
+        if [ -z "$NUGET_API_KEY" ]; then
+          echo "::error::publish_to_nuget was requested but the NUGET_API_KEY secret is not set"
+          exit 1
+        fi
+        dotnet nuget push "packages/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"
