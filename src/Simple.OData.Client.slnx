@@ -5,5 +5,9 @@
   <Folder Name="/tests/">
     <Project Path="Simple.OData.Client.Tests/Simple.OData.Client.Tests.csproj" />
     <Project Path="Simple.OData.Client.Tests.TestServer/Simple.OData.Client.Tests.TestServer.csproj" />
+    <Project Path="Simple.OData.Client.Tests.Integration/Simple.OData.Client.Tests.Integration.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="Simple.OData.Client.Benchmarks/Simple.OData.Client.Benchmarks.csproj" />
   </Folder>
 </Solution>

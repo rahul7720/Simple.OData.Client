@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<RootNamespace>Simple.OData.Client.Tests</RootNamespace>
+		<NoWarn>$(NoWarn);CA1852;CS8618;CS8600;CS8601;CS8602;CS8603;CS8604;CS8625;CS8619;CS8620;CS8629;CS8714;CS8765;CS8767</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Simple.OData.Client\Simple.OData.Client.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.OData.Edm" />
+		<PackageReference Include="Microsoft.Spatial" />
+	</ItemGroup>
+
+</Project>
