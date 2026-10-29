@@ -1,0 +1,27 @@
+<Project>
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- Library -->
+		<PackageVersion Include="Microsoft.OData.Core" Version="9.0.0" />
+		<PackageVersion Include="Microsoft.OData.Edm" Version="9.0.0" />
+		<PackageVersion Include="Microsoft.Spatial" Version="9.0.0" />
+
+		<!-- Tests -->
+		<PackageVersion Include="xunit.v3" Version="4.0.2" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="4.0.1" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+		<PackageVersion Include="AwesomeAssertions" Version="9.6.0" />
+		<PackageVersion Include="coverlet.collector" Version="10.1.0" />
+
+		<!-- In-process OData V4 test server -->
+		<PackageVersion Include="Microsoft.AspNetCore.OData" Version="10.0.0-preview.2" />
+		<PackageVersion Include="Microsoft.OData.ModelBuilder" Version="3.0.0" />
+		<PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="10.0.14" />
+
+		<!-- Benchmarks -->
+		<PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
+	</ItemGroup>
+</Project>

@@ -1,0 +1,6 @@
+
+# .NET 10 modernization
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.received.*
+.superpowers/

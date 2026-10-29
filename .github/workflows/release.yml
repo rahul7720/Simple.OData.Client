@@ -1,6 +1,3 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
 name: Release Build & Package
 
 on:
@@ -10,42 +7,36 @@ on:
 
 jobs:
   build:
-
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-
-    - name: Get Current Time
-      id: build_date
-      run: |
-          $CurrentDateTime = Get-Date -Format "yyyyMMdd-HHmmss"
-          echo "::set-output name=date::$CurrentDateTime"
-          echo "$CurrentDateTime"
-
     - uses: actions/checkout@v4
-  
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.x
+        dotnet-version: 10.0.x
 
-    - name: Restore Dependencies
-      run: dotnet restore "src/Simple.OData.Client.sln"
+    - name: Restore
+      run: dotnet restore src/Simple.OData.Client.slnx
 
     - name: Build
-      run: dotnet build "src/Simple.OData.Client.sln" --no-restore --configuration Release --verbosity minimal
+      run: dotnet build src/Simple.OData.Client.slnx --no-restore --configuration Release /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
 
     - name: Test
-      run: dotnet test "src/Simple.OData.Client.sln" --no-build --configuration Release --verbosity minimal
+      run: dotnet test src/Simple.OData.Client.slnx --no-build --configuration Release
 
-    # - name: Create NuGet Packages
-    #   run: dotnet pack src/Simple.OData.Client.sln --no-build --output packages /p:Configuration=release /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
+    - name: Pack
+      run: dotnet pack src/Simple.OData.Client/Simple.OData.Client.csproj --no-build --configuration Release --output packages /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
 
-    # - name: Upload Artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: nuget-packages
-    #     path: packages
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages
 
     - name: Push to NuGet
-      run: dotnet nuget push "**/*.nupkg" --skip-duplicate --no-service-endpoint -s "https://api.nuget.org/v3/index.json" -k ${{ secrets.NUGET_API_KEY }}
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      if: ${{ env.NUGET_API_KEY != '' }}
+      run: dotnet nuget push "packages/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"

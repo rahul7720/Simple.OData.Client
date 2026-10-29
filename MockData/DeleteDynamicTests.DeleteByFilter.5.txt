@@ -1,1 +1,0 @@
-{"Content":null,"ContentHeaders":null,"Method":"DELETE","RequestHeaders":[{"Key":"Prefer","Value":["return-no-content"]}],"RequestUri":"http:\/\/nrkdt66337\/Temporary_Listen_Addresses\/SimpleODataTestService74\/Products(1018)"}
