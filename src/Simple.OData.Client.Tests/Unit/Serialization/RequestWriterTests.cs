@@ -291,10 +291,10 @@ public sealed class RequestWriterTests
 		single.RequestMessage.Content.Should().BeNull();
 
 		var collection = await Writer().CreateUnlinkRequestAsync("Categories", "Products", "Categories(1)", "Products(2)");
-		collection.CommandText.Should().Be("Categories(1)/Products/$ref?$id=Products(2)");
+		collection.CommandText.Should().Be("Categories(1)/Products(2)/$ref", because: "OData 4.01 addresses a collection member reference through a key segment");
 
-		var absolute = await Writer(s => s.UseAbsoluteReferenceUris = true).CreateUnlinkRequestAsync("Categories", "Products", "Categories(1)", "Products(2)");
-		absolute.CommandText.Should().MatchRegex(@"^Categories\(1\)/Products/\$ref\?\$id=http://localhost/.+/Products\(2\)$");
+		var keyAsSegment = await Writer(s => s.KeyAsSegment = true).CreateUnlinkRequestAsync("Categories", "Products", "Categories/1", "Products/2");
+		keyAsSegment.CommandText.Should().Be("Categories/1/Products/2/$ref");
 	}
 
 	[Fact]

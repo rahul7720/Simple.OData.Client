@@ -56,6 +56,22 @@ public class TransportController(NorthwindData data) : NorthwindController(data)
 	[HttpPost("odata/Transport/NorthwindModel.Truck")]
 	public IActionResult PostTruck([FromBody] Truck truck) => Post(truck);
 
+	[HttpPatch("odata/Transport({key})/NorthwindModel.Ship")]
+	public IActionResult PatchShip(int key, [FromBody] Delta<Ship> delta)
+	{
+		var ship = Find(key) as Ship;
+		if (ship is null || delta is null)
+		{
+			return NotFound();
+		}
+
+		Data.Mutate(() => delta.Patch(ship));
+		return Updated(ship);
+	}
+
+	[HttpDelete("odata/Transport({key})/NorthwindModel.Ship")]
+	public IActionResult DeleteShip(int key) => Find(key) is Ship ? Delete(key) : NotFound();
+
 	public IActionResult Patch(int key, [FromBody] Delta<Transport> delta)
 	{
 		var transport = Find(key);

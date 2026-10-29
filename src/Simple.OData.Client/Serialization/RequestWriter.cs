@@ -676,16 +676,18 @@ internal sealed class RequestWriter(Session session, Lazy<BatchWriter>? batchWri
 		return request;
 	}
 
-	private string FormatLinkPath(string entryIdent, string navigationPropertyName, string? linkIdent)
+	private static string FormatLinkPath(string entryIdent, string navigationPropertyName, string? linkIdent)
 	{
-		var path = $"{entryIdent}/{navigationPropertyName}/{ODataLiteral.Ref}";
 		if (linkIdent is null)
 		{
-			return path;
+			return $"{entryIdent}/{navigationPropertyName}/{ODataLiteral.Ref}";
 		}
 
-		var link = session.Settings.UseAbsoluteReferenceUris ? Utils.CreateAbsoluteUri(session.BaseUri, linkIdent).AbsoluteUri : linkIdent;
-		return $"{path}?{ODataLiteral.Id}={link}";
+		// OData 4.01 addresses a collection member's reference with a key segment on the navigation property
+		// (Categories(1)/Products(2)/$ref), which is also the only form ASP.NET Core OData routes by convention.
+		var keyStart = linkIdent.IndexOfAny(['(', '/']);
+		var keyPredicate = keyStart < 0 ? linkIdent : linkIdent[keyStart..];
+		return $"{entryIdent}/{navigationPropertyName}{keyPredicate}/{ODataLiteral.Ref}";
 	}
 
 	private bool HasStructuralProperties(IEdmEntityType entityType, IDictionary<string, object?> entryData) =>

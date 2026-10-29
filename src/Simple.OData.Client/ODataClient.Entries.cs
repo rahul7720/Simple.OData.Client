@@ -321,7 +321,7 @@ public sealed partial class ODataClient
 
 		await Session.InitializeAsync(cancellationToken).ConfigureAwait(false);
 		var resolved = command.Resolve(Session);
-		if (!resolved.Details.HasKey)
+		if (!resolved.Details.HasKey && !resolved.IsSingleton)
 		{
 			if (!resolved.Details.HasFilter)
 			{

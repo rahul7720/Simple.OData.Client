@@ -55,7 +55,7 @@ internal sealed class RequestBuilder
 	public async Task<ODataRequest> UpdateRequestAsync(bool resultRequired)
 	{
 		var command = Command;
-		var entryKey = command.Details.UseEachSegment ? new Dictionary<string, object?>() : RequireKey(command);
+		var entryKey = command.Details.UseEachSegment || command.IsSingleton ? new Dictionary<string, object?>() : RequireKey(command);
 		var request = await Writer.CreateUpdateRequestAsync(command.QualifiedEntityCollectionName, command.Format(), entryKey, command.CommandData, resultRequired, Headers).ConfigureAwait(false);
 		return WithPreferences(request);
 	}
@@ -96,7 +96,11 @@ internal sealed class RequestBuilder
 	public async Task<ODataRequest> LinkRequestAsync(string linkName, IDictionary<string, object?> linkedEntryKey)
 	{
 		var command = Command;
-		RequireKey(command);
+		if (!command.IsSingleton)
+		{
+			RequireKey(command);
+		}
+
 		var collectionName = command.QualifiedEntityCollectionName;
 		var linkedCollection = Session.Metadata.GetNavigationPropertyPartnerTypeName(collectionName, linkName);
 		var linkIdent = FormatEntryKey(linkedCollection, linkedEntryKey);
@@ -107,7 +111,11 @@ internal sealed class RequestBuilder
 	public async Task<ODataRequest> UnlinkRequestAsync(string linkName, IDictionary<string, object?>? linkedEntryKey)
 	{
 		var command = Command;
-		RequireKey(command);
+		if (!command.IsSingleton)
+		{
+			RequireKey(command);
+		}
+
 		var collectionName = command.QualifiedEntityCollectionName;
 		string? linkIdent = null;
 		if (linkedEntryKey is not null)

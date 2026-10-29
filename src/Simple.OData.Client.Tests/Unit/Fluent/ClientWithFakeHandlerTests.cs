@@ -105,6 +105,23 @@ public sealed class ClientWithFakeHandlerTests
 	}
 
 	[Fact]
+	public async Task UpdateSingletonSendsPatchWithoutKey()
+	{
+		var handler = new FakeHttpHandler();
+		var client = MetadataClientFactory.CreateClient("TripPin.xml", null, handler);
+		handler.Enqueue(HttpStatusCode.NoContent);
+		handler.Enqueue(HttpStatusCode.OK, $$$"""{{{Context(client, "Me")}}},"UserName":"russellwhyte","FirstName":"Russ"}""");
+		var me = await client.For("Me").Set(new { FirstName = "Russ" }).UpdateEntryAsync();
+		me!["FirstName"].Should().Be("Russ");
+		handler.Requests.Should().HaveCount(2);
+		handler.Requests[0].Method.Should().Be(HttpMethod.Patch);
+		handler.Requests[0].RequestUri!.AbsoluteUri.Should().EndWith("/Me");
+		handler.RequestBodies[0].Should().Contain("\"FirstName\":\"Russ\"");
+		handler.Requests[1].Method.Should().Be(HttpMethod.Get);
+		handler.Requests[1].RequestUri!.AbsoluteUri.Should().EndWith("/Me");
+	}
+
+	[Fact]
 	public async Task DeleteEntriesWithEachModeSendsSingleDelete()
 	{
 		var (client, handler) = Create(s => s.BulkOperationMode = BulkOperationMode.Each);

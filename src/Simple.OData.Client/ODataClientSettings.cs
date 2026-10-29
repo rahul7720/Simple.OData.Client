@@ -183,9 +183,6 @@ public sealed class ODataClientSettings
 	/// <summary>Write enum literals without their type prefix in URLs.</summary>
 	public bool EnumPrefixFree { get; set; }
 
-	/// <summary>Write <c>$ref</c> targets as absolute URIs.</summary>
-	public bool UseAbsoluteReferenceUris { get; set; }
-
 	/// <summary>The <c>$batch</c> wire format.</summary>
 	public BatchFormat BatchFormat { get; set; }
 

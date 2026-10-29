@@ -68,6 +68,18 @@ public class CategoriesController(NorthwindData data) : NorthwindController(data
 		Data.Mutate(() =>
 		{
 			delta.Patch(category);
+			if (delta.GetChangedPropertyNames().Contains(nameof(Category.Products)) && delta.TryGetPropertyValue(nameof(Category.Products), out var value) && value is IEnumerable<Product> products)
+			{
+				foreach (var product in products)
+				{
+					var existing = Data.Products.FirstOrDefault(x => x.ProductID == product.ProductID);
+					if (existing is not null)
+					{
+						existing.CategoryID = key;
+					}
+				}
+			}
+
 			Data.Relink();
 		});
 		return Updated(category);

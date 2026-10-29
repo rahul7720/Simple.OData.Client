@@ -41,6 +41,20 @@ public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) :
 		return product is null ? NotFound() : Ok(product);
 	}
 
+	[HttpPatch("odata/Products(ProductName={name})")]
+	public IActionResult PatchByName(string name, [FromBody] Delta<Product> delta)
+	{
+		var product = Data.Products.FirstOrDefault(x => x.ProductName == name);
+		return product is null ? NotFound() : Patch(product.ProductID, delta);
+	}
+
+	[HttpDelete("odata/Products(ProductName={name})")]
+	public IActionResult DeleteByName(string name)
+	{
+		var product = Data.Products.FirstOrDefault(x => x.ProductName == name);
+		return product is null ? NotFound() : Delete(product.ProductID);
+	}
+
 	[NorthwindQuery]
 	public IActionResult GetCategory(int key)
 	{
@@ -355,16 +369,34 @@ public class ProductsController(NorthwindData data, AsyncMonitorStore monitor) :
 
 	private Product? Find(int key) => Data.Products.FirstOrDefault(x => x.ProductID == key);
 
-	private void ApplyNavigationChanges(Product product, Delta<Product> delta)
+	private static void ApplyNavigationChanges(Product product, Delta<Product> delta)
 	{
-		if (delta.GetChangedPropertyNames().Contains(nameof(Product.Category)) && delta.TryGetPropertyValue(nameof(Product.Category), out var category))
+		var changed = delta.GetChangedPropertyNames().ToHashSet(StringComparer.Ordinal);
+		if (changed.Contains(nameof(Product.Category)))
 		{
-			product.CategoryID = (category as Category)?.CategoryID;
+			product.CategoryID = ReferencedKey(delta, nameof(Product.Category), nameof(Category.CategoryID), (Category c) => c.CategoryID) ?? product.Category?.CategoryID;
 		}
 
-		if (delta.GetChangedPropertyNames().Contains(nameof(Product.Supplier)) && delta.TryGetPropertyValue(nameof(Product.Supplier), out var supplier))
+		if (changed.Contains(nameof(Product.Supplier)))
 		{
-			product.SupplierID = (supplier as Supplier)?.SupplierID;
+			product.SupplierID = ReferencedKey(delta, nameof(Product.Supplier), nameof(Supplier.SupplierID), (Supplier s) => s.SupplierID) ?? product.Supplier?.SupplierID;
 		}
+	}
+
+	/// <summary>Reads the key of a navigation target bound with <c>@odata.bind</c>, whether it arrived as an entity or as a nested delta.</summary>
+	private static int? ReferencedKey<TEntity>(Delta<Product> delta, string navigation, string keyName, Func<TEntity, int> keyOf)
+		where TEntity : class
+	{
+		if (!delta.TryGetPropertyValue(navigation, out var value))
+		{
+			return null;
+		}
+
+		return value switch
+		{
+			TEntity entity => keyOf(entity),
+			IDelta nested when nested.TryGetPropertyValue(keyName, out var key) && key is int id => id,
+			_ => null,
+		};
 	}
 }

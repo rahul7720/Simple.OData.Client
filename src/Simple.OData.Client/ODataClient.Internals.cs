@@ -207,6 +207,11 @@ public sealed partial class ODataClient
 	/// <summary>Re-reads an updated entry, honouring key values changed by the update.</summary>
 	private async Task<IDictionary<string, object?>?> GetUpdatedResultAsync(ResolvedCommand resolved, CancellationToken cancellationToken)
 	{
+		if (resolved.IsSingleton)
+		{
+			return await FindEntryAsync(resolved.Format(), cancellationToken).ConfigureAwait(false);
+		}
+
 		if ((resolved.KeyValues ?? resolved.FilterAsKey) is not { } entryKey)
 		{
 			return null;

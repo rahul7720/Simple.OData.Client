@@ -81,11 +81,17 @@ public interface IBoundClient<T> : IFluentClient<T, IBoundClient<T>>
 	/// <summary>Deletes every entry matching the filter. Returns the number of deleted entries, or -1 when a <c>$each</c> request did not report it.</summary>
 	Task<int> DeleteEntriesAsync(CancellationToken cancellationToken = default);
 
-	/// <summary>Creates a reference (<c>$ref</c>) to <paramref name="linkedEntryKey"/> through the navigation named <paramref name="linkName"/> or by the type of <typeparamref name="TResult"/>.</summary>
-	Task LinkEntryAsync<TResult>(TResult linkedEntryKey, string? linkName = null, CancellationToken cancellationToken = default);
+	/// <summary>Creates a reference (<c>$ref</c>) to <paramref name="linkedEntryKey"/> through the navigation named by the type of <typeparamref name="TResult"/>.</summary>
+	Task LinkEntryAsync<TResult>(TResult linkedEntryKey, CancellationToken cancellationToken = default);
+
+	/// <summary>Creates a reference (<c>$ref</c>) to <paramref name="linkedEntryKey"/> through the navigation named <paramref name="linkName"/>.</summary>
+	Task LinkEntryAsync<TResult>(TResult linkedEntryKey, string linkName, CancellationToken cancellationToken = default);
 
 	/// <summary>Creates a reference (<c>$ref</c>) through the navigation selected by <paramref name="expression"/>.</summary>
 	Task LinkEntryAsync<TResult>(Expression<Func<T, TResult>> expression, TResult linkedEntryKey, CancellationToken cancellationToken = default);
+
+	/// <summary>Creates a reference (<c>$ref</c>) through the navigation named <paramref name="linkName"/>.</summary>
+	Task LinkEntryAsync(string linkName, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default);
 
 	/// <summary>Creates a reference (<c>$ref</c>) through the navigation named by a dynamic expression.</summary>
 	Task LinkEntryAsync(ODataExpression expression, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default);
@@ -105,11 +111,17 @@ public interface IBoundClient<T> : IFluentClient<T, IBoundClient<T>>
 	/// <summary>Removes the reference of the navigation named by a dynamic expression.</summary>
 	Task UnlinkEntryAsync(ODataExpression expression, CancellationToken cancellationToken = default);
 
-	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the navigation named <paramref name="linkName"/> or by the type of <typeparamref name="TResult"/>.</summary>
-	Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, string? linkName = null, CancellationToken cancellationToken = default);
+	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the navigation named by the type of <typeparamref name="TResult"/>.</summary>
+	Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, CancellationToken cancellationToken = default);
+
+	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the navigation named <paramref name="linkName"/>.</summary>
+	Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, string linkName, CancellationToken cancellationToken = default);
 
 	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the navigation selected by <paramref name="expression"/>.</summary>
 	Task UnlinkEntryAsync<TResult>(Expression<Func<T, TResult>> expression, TResult linkedEntryKey, CancellationToken cancellationToken = default);
+
+	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the collection navigation named <paramref name="linkName"/>.</summary>
+	Task UnlinkEntryAsync(string linkName, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default);
 
 	/// <summary>Removes the reference to <paramref name="linkedEntryKey"/> from the navigation named by a dynamic expression.</summary>
 	Task UnlinkEntryAsync(ODataExpression expression, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default);

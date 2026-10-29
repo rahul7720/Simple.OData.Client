@@ -79,10 +79,14 @@ public sealed partial class BoundClient<T>
 	public Task<int> DeleteEntriesAsync(CancellationToken cancellationToken = default) => Client.DeleteEntriesAsync(Command, cancellationToken);
 
 	/// <inheritdoc />
-	public Task LinkEntryAsync<TResult>(TResult linkedEntryKey, string? linkName = null, CancellationToken cancellationToken = default)
+	public Task LinkEntryAsync<TResult>(TResult linkedEntryKey, CancellationToken cancellationToken = default) =>
+		LinkEntryAsync(linkedEntryKey, typeof(TResult).Name, cancellationToken);
+
+	/// <inheritdoc />
+	public Task LinkEntryAsync<TResult>(TResult linkedEntryKey, string linkName, CancellationToken cancellationToken = default)
 	{
 		ArgumentNullException.ThrowIfNull(linkedEntryKey);
-		return Client.LinkEntryAsync(Command, linkName ?? typeof(TResult).Name, ToKey(linkedEntryKey), cancellationToken);
+		return Client.LinkEntryAsync(Command, linkName, ToKey(linkedEntryKey), cancellationToken);
 	}
 
 	/// <inheritdoc />
@@ -91,6 +95,10 @@ public sealed partial class BoundClient<T>
 		ArgumentNullException.ThrowIfNull(linkedEntryKey);
 		return Client.LinkEntryAsync(Command, expression.ExtractColumnName(TypeCache), ToKey(linkedEntryKey), cancellationToken);
 	}
+
+	/// <inheritdoc />
+	public Task LinkEntryAsync(string linkName, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default) =>
+		Client.LinkEntryAsync(Command, linkName, linkedEntryKey, cancellationToken);
 
 	/// <inheritdoc />
 	public Task LinkEntryAsync(ODataExpression expression, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default) =>
@@ -118,18 +126,25 @@ public sealed partial class BoundClient<T>
 		Client.UnlinkEntryAsync(Command, ReferenceOf(expression), null, cancellationToken);
 
 	/// <inheritdoc />
-	public Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, string? linkName = null, CancellationToken cancellationToken = default) =>
+	public Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, CancellationToken cancellationToken = default) =>
 		linkedEntryKey switch
 		{
-			null => Client.UnlinkEntryAsync(Command, linkName ?? typeof(TResult).Name, null, cancellationToken),
-			string name when linkName is null => UnlinkEntryAsync(name, cancellationToken),
-			ODataExpression { Reference: not null } expression when linkName is null => UnlinkEntryAsync(expression, cancellationToken),
-			_ => Client.UnlinkEntryAsync(Command, linkName ?? typeof(TResult).Name, ToKey(linkedEntryKey), cancellationToken),
+			string name => UnlinkEntryAsync(name, cancellationToken),
+			ODataExpression { Reference: not null } expression => UnlinkEntryAsync(expression, cancellationToken),
+			_ => UnlinkEntryAsync(linkedEntryKey, typeof(TResult).Name, cancellationToken),
 		};
+
+	/// <inheritdoc />
+	public Task UnlinkEntryAsync<TResult>(TResult linkedEntryKey, string linkName, CancellationToken cancellationToken = default) =>
+		Client.UnlinkEntryAsync(Command, linkName, linkedEntryKey is null ? null : ToKey(linkedEntryKey), cancellationToken);
 
 	/// <inheritdoc />
 	public Task UnlinkEntryAsync<TResult>(Expression<Func<T, TResult>> expression, TResult linkedEntryKey, CancellationToken cancellationToken = default) =>
 		Client.UnlinkEntryAsync(Command, expression.ExtractColumnName(TypeCache), linkedEntryKey is null ? null : ToKey(linkedEntryKey), cancellationToken);
+
+	/// <inheritdoc />
+	public Task UnlinkEntryAsync(string linkName, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default) =>
+		Client.UnlinkEntryAsync(Command, linkName, linkedEntryKey, cancellationToken);
 
 	/// <inheritdoc />
 	public Task UnlinkEntryAsync(ODataExpression expression, IDictionary<string, object?> linkedEntryKey, CancellationToken cancellationToken = default) =>

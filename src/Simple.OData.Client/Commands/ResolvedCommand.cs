@@ -45,6 +45,9 @@ public sealed class ResolvedCommand
 		}
 	}
 
+	/// <summary>Whether the command addresses a singleton, which is updated and navigated without a key.</summary>
+	public bool IsSingleton => EntityCollection is { } collection && _session.Metadata.IsSingleton((collection.BaseEntityCollection ?? collection).Name);
+
 	/// <summary>The property that holds dynamic (open type) properties.</summary>
 	public string? DynamicPropertiesContainerName => Details.DynamicPropertiesContainerName;
 
