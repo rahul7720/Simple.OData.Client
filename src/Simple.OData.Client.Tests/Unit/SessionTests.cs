@@ -189,7 +189,7 @@ public class HttpConnectionTests
 		var httpClient = new HttpClient(new FakeHttpHandler());
 		var settings = new ODataClientSettings(httpClient) { BaseUri = new Uri("http://localhost/") };
 
-		using var connection = new Http.HttpConnection(settings);
+		using var connection = new Simple.OData.Client.Http.HttpConnection(settings);
 
 		connection.HttpClient.Should().BeSameAs(httpClient);
 	}
@@ -199,7 +199,7 @@ public class HttpConnectionTests
 	{
 		var settings = new ODataClientSettings(new Uri("http://localhost/")) { RequestTimeout = TimeSpan.FromSeconds(5) };
 
-		using var connection = new Http.HttpConnection(settings);
+		using var connection = new Simple.OData.Client.Http.HttpConnection(settings);
 
 		connection.HttpClient.Timeout.Should().Be(TimeSpan.FromSeconds(5));
 		connection.HttpClient.BaseAddress.Should().BeNull();
@@ -211,7 +211,7 @@ public class HttpConnectionTests
 		var handler = new FakeHttpHandler().Enqueue(HttpStatusCode.OK, "{}");
 		var settings = new ODataClientSettings(new Uri("http://localhost/")) { OnCreateMessageHandler = () => handler };
 
-		using var connection = new Http.HttpConnection(settings);
+		using var connection = new Simple.OData.Client.Http.HttpConnection(settings);
 		using var response = await connection.HttpClient.GetAsync(new Uri("http://localhost/x"));
 
 		handler.Requests.Should().ContainSingle();
@@ -223,7 +223,7 @@ public class HttpConnectionTests
 		SocketsHttpHandler? configured = null;
 		var settings = new ODataClientSettings(new Uri("http://localhost/")) { ConfigureHandler = h => configured = h };
 
-		using var connection = new Http.HttpConnection(settings);
+		using var connection = new Simple.OData.Client.Http.HttpConnection(settings);
 
 		configured.Should().NotBeNull();
 		configured!.AutomaticDecompression.Should().Be(DecompressionMethods.All);

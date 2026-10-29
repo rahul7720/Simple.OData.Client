@@ -21,7 +21,7 @@ internal sealed class FakeHttpHandler : HttpMessageHandler
 	/// <summary>
 	/// Used when the queue is empty; when null an empty queue throws.
 	/// </summary>
-	public Func<HttpRequestMessage, HttpResponseMessage>? Fallback { get; set; }
+	public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>? Fallback { get; set; }
 
 	public FakeHttpHandler Enqueue(
 		HttpStatusCode status,
@@ -104,7 +104,7 @@ internal sealed class FakeHttpHandler : HttpMessageHandler
 		}
 		else if (Fallback is not null)
 		{
-			response = Fallback(request);
+			response = await Fallback(request, cancellationToken);
 		}
 		else
 		{
