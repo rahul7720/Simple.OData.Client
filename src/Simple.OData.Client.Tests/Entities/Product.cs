@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Simple.OData.Tests.Client;
+namespace Simple.OData.Client.Tests;
 
 public class Product
 {

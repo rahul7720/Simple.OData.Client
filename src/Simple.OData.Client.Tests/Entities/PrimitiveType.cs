@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 
-namespace Simple.OData.Tests.Client.Entities
+namespace Simple.OData.Client.Tests.Entities
 {
 	[TypeConverter(typeof(PrimitiveTypeConverter))]
 	internal readonly struct PrimitiveType(Guid value)
@@ -9,7 +9,7 @@ namespace Simple.OData.Tests.Client.Entities
 		public Guid Value { get; } = value;
 	}
 
-	internal class PrimitiveTypeConverter : System.ComponentModel.TypeConverter
+	internal sealed class PrimitiveTypeConverter : System.ComponentModel.TypeConverter
 	{
 		public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
 		{

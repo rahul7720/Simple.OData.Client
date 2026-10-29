@@ -1,4 +1,4 @@
-﻿namespace Simple.OData.Tests.Client;
+﻿namespace Simple.OData.Client.Tests;
 
 public class Transport
 {

@@ -1,7 +1,7 @@
 ﻿using System.Runtime.Serialization;
 using Simple.OData.Client;
 
-namespace Simple.OData.Tests.Client;
+namespace Simple.OData.Client.Tests;
 
 internal enum PersonGender
 {

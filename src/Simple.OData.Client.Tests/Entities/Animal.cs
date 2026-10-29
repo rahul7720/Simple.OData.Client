@@ -1,4 +1,4 @@
-﻿namespace Simple.OData.Tests.Client.Entities;
+﻿namespace Simple.OData.Client.Tests.Entities;
 
 public class Animal
 {
