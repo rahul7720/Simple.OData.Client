@@ -39,7 +39,7 @@ internal sealed class CommandDetails
 		OrderByColumns = [.. source.OrderByColumns];
 		ComputeText = source.ComputeText;
 		ComputeExpressions = [.. source.ComputeExpressions];
-		Apply = source.Apply;
+		ApplyClauses = [.. source.ApplyClauses];
 		ComputeCount = source.ComputeCount;
 		IncludeCount = source.IncludeCount;
 		UseEachSegment = source.UseEachSegment;
@@ -105,8 +105,8 @@ internal sealed class CommandDetails
 
 	public List<(string Alias, ODataExpression Expression)> ComputeExpressions { get; } = [];
 
-	/// <summary>Either a <see cref="string"/> or an <see cref="IApplyBuilder"/>.</summary>
-	public object? Apply { get; set; }
+	/// <summary>Successive <c>$apply</c> pipelines, each a <see cref="string"/> or an <see cref="IApplyBuilder"/>, joined with <c>/</c>.</summary>
+	public List<object> ApplyClauses { get; } = [];
 
 	public bool ComputeCount { get; set; }
 

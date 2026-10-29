@@ -277,17 +277,18 @@ public sealed class FluentCommand
 		return this;
 	}
 
-	/// <summary>Sets raw <c>$apply</c> text.</summary>
+	/// <summary>Appends raw <c>$apply</c> text; successive calls are chained with <c>/</c>.</summary>
 	public FluentCommand Apply(string apply)
 	{
 		ArgumentException.ThrowIfNullOrEmpty(apply);
-		Details.Apply = apply;
+		Details.ApplyClauses.Add(apply);
 		return this;
 	}
 
 	internal FluentCommand Apply(IApplyBuilder builder)
 	{
-		Details.Apply = builder ?? throw new ArgumentNullException(nameof(builder));
+		ArgumentNullException.ThrowIfNull(builder);
+		Details.ApplyClauses.Add(builder);
 		return this;
 	}
 

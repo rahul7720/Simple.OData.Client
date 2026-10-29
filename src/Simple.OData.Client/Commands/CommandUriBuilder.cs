@@ -255,16 +255,18 @@ internal sealed class CommandUriBuilder(Session session) : IUriValueFormatter
 			queryClauses.Add($"{ODataLiteral.Compute}={EscapeUnescapedString(FormatCompute(command, resultCollection))}");
 		}
 
-		if (details.Apply is { } apply)
+		if (details.ApplyClauses.Count > 0)
 		{
-			var applyText = apply switch
-			{
-				IApplyBuilder builder => builder.Build(command, session),
-				string text => text,
-				_ => throw new InvalidOperationException($"Unsupported $apply source '{apply.GetType()}'."),
-			};
+			var applyText = string.Join('/', details.ApplyClauses
+				.Select(apply => apply switch
+				{
+					IApplyBuilder builder => builder.Build(command, session),
+					string text => text,
+					_ => throw new InvalidOperationException($"Unsupported $apply source '{apply.GetType()}'."),
+				})
+				.Where(static text => !string.IsNullOrEmpty(text)));
 
-			if (!string.IsNullOrEmpty(applyText))
+			if (applyText.Length > 0)
 			{
 				queryClauses.Add($"{ODataLiteral.Apply}={EscapeUnescapedString(applyText)}");
 			}
