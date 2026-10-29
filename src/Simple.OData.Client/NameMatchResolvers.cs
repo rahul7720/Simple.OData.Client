@@ -31,6 +31,12 @@ public static class ODataNameMatchResolver
 /// <param name="comparison">The string comparison used after optional homogenization.</param>
 public sealed class ExactMatchResolver(bool alphanumericComparison = false, StringComparison comparison = StringComparison.Ordinal) : INameMatchResolver
 {
+	/// <summary>Whether names are homogenized before comparison.</summary>
+	public bool AlphanumericComparison { get; } = alphanumericComparison;
+
+	/// <summary>The comparison applied after optional homogenization.</summary>
+	public StringComparison Comparison { get; } = comparison;
+
 	/// <inheritdoc />
 	public bool IsMatch(string actualName, string requestedName)
 	{
@@ -39,13 +45,13 @@ public sealed class ExactMatchResolver(bool alphanumericComparison = false, Stri
 
 		var actual = ODataNameMatchResolver.StripNamespace(actualName);
 		var requested = ODataNameMatchResolver.StripNamespace(requestedName);
-		if (alphanumericComparison)
+		if (AlphanumericComparison)
 		{
 			actual = actual.Homogenize();
 			requested = requested.Homogenize();
 		}
 
-		return actual.Equals(requested, comparison);
+		return actual.Equals(requested, Comparison);
 	}
 }
 
