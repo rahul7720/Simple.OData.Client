@@ -7,11 +7,30 @@ namespace Simple.OData.Client.Http;
 internal static class PreferHeader
 {
 	/// <summary>Returns the header value, or <see langword="null"/> when no preference applies. Request preferences win over settings.</summary>
-	public static string? Compose(ODataClientSettings settings, ODataRequest request)
+	public static string? Compose(ODataClientSettings settings, ODataRequest request) => Compose(settings, request, null);
+
+	/// <summary>Composes the Prefer header; <paramref name="existing"/> holds values a caller already put on the message, which win over composed ones of the same name.</summary>
+	public static string? Compose(ODataClientSettings settings, ODataRequest request, IEnumerable<string>? existing)
 	{
 		ArgumentNullException.ThrowIfNull(settings);
 		ArgumentNullException.ThrowIfNull(request);
-		var preferences = new List<string>(request.Preferences);
+		var preferences = new List<string>();
+		foreach (var header in existing ?? [])
+		{
+			foreach (var part in header.Split(','))
+			{
+				var preference = part.Trim();
+				if (preference.Length > 0)
+				{
+					Add(preferences, preference);
+				}
+			}
+		}
+
+		foreach (var preference in request.Preferences)
+		{
+			Add(preferences, preference);
+		}
 
 		if (settings.MaxPageSize is { } maxPageSize)
 		{

@@ -109,6 +109,16 @@ public partial class ODataExpression
 
 	private static ODataExpression ParseCallExpression(MethodCallExpression callExpression)
 	{
+		// a call that never touches the lambda parameter (helper.GetName(), captured.ToUpper()) is a value, not a function to
+		// translate; ToString() is left to the branches below, which treat it as a pass-through so enum constants keep their type
+		if (callExpression.Method.DeclaringType != typeof(ODataFunctions)
+			&& !string.Equals(callExpression.Method.Name, nameof(ToString), StringComparison.Ordinal)
+			&& !IsParameterBound(callExpression)
+			&& EvaluateIfClosed(callExpression) is { } closed)
+		{
+			return closed;
+		}
+
 		if (callExpression.Object is null)
 		{
 			// static call: a built-in function on the first argument, or a value computed locally

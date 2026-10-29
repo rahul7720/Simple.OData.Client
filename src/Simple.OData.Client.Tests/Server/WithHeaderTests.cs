@@ -160,6 +160,16 @@ public sealed class WithHeaderTests(TestServerFixture fixture) : ServerTestBase(
 	}
 
 	[Fact]
+	public async Task CustomPreferenceTravelsWithTheComposedOnes()
+	{
+		var annotations = new ODataFeedAnnotations();
+		await CreateClient().For("Products").WithHeader("Prefer", "wait=10").WithMaxPageSize(5).FindEntriesAsync(annotations);
+		var prefer = Request("GET", "/Products").Headers["Prefer"];
+		prefer.Should().Contain("wait=10").And.Contain("odata.maxpagesize=5");
+		annotations.NextPageLink.Should().NotBeNull("the page size preference still reached the server");
+	}
+
+	[Fact]
 	public async Task ClientApiHeaders()
 	{
 		var client = CreateClient(s => s.BeforeRequest = r => r.Headers.TryAddWithoutValidation(Name, Value));

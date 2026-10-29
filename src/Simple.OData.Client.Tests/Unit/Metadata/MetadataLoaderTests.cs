@@ -1,4 +1,5 @@
 using Microsoft.OData.Edm;
+using Microsoft.OData.Edm.Validation;
 using Simple.OData.Client.Metadata;
 using Simple.OData.Client.Tests.Infrastructure;
 
@@ -13,6 +14,16 @@ public class MetadataLoaderTests
 	private const string EdmxV1 = """
 		<edmx:Edmx Version="1.0" xmlns:edmx="http://schemas.microsoft.com/ado/2007/06/edmx"><edmx:DataServices m:DataServiceVersion="3.0" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata"><Schema Namespace="NS" xmlns="http://schemas.microsoft.com/ado/2009/11/edm" /></edmx:DataServices></edmx:Edmx>
 		""";
+
+	[Fact]
+	public void BuiltInVocabularyReferencesResolve()
+	{
+		// TripPin references the Core vocabulary through edmx:Reference; its terms resolve without any extra download
+		var model = MetadataLoader.Parse(Resources.Read("TripPin.xml"));
+		var computed = model.VocabularyAnnotations.Select(x => x.Term).First(x => x.FullName() == "Org.OData.Core.V1.Computed");
+		computed.IsBad().Should().BeFalse();
+		computed.Type.FullName().Should().Be("Org.OData.Core.V1.Tag", "the term type comes from the referenced Core vocabulary");
+	}
 
 	[Fact]
 	public void ParsesCsdlXml()

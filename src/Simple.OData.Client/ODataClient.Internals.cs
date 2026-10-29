@@ -173,20 +173,42 @@ public sealed partial class ODataClient
 		}
 	}
 
+	private EntityCollection? TryResolveCollection(string commandText) =>
+		TryResolveCollection(Uri.TryCreate(commandText, UriKind.Absolute, out var absolute) && (absolute.Scheme == Uri.UriSchemeHttp || absolute.Scheme == Uri.UriSchemeHttps)
+			? absolute
+			: Utils.CreateAbsoluteUri(Session.BaseUri, commandText));
+
+	/// <summary>
+	/// The collection a request URL addresses (entity set, navigation path or derived type), used as the reader's expectation
+	/// when the payload carries no context URL. Falls back to the first segment's entity set for paths the resolver does not
+	/// understand (operations, properties) and to no expectation at all when even that fails.
+	/// </summary>
 	private EntityCollection? TryResolveCollection(Uri uri)
 	{
-		var relative = Session.BaseUri.IsBaseOf(uri) ? Session.BaseUri.MakeRelativeUri(uri).ToString() : uri.PathAndQuery.TrimStart('/');
-		var collectionName = Utils.ExtractCollectionName(Uri.UnescapeDataString(relative));
-		if (string.IsNullOrEmpty(collectionName))
+		var relative = Uri.UnescapeDataString(Session.BaseUri.IsBaseOf(uri) ? Session.BaseUri.MakeRelativeUri(uri).ToString() : uri.PathAndQuery.TrimStart('/'));
+		var query = relative.IndexOf('?');
+		var path = (query < 0 ? relative : relative[..query]).Trim('/');
+		var systemSegment = path.IndexOf("/$", StringComparison.Ordinal);
+		if (systemSegment >= 0)
+		{
+			path = path[..systemSegment];
+		}
+
+		if (path.Length == 0 || path.StartsWith('$'))
 		{
 			return null;
 		}
 
+		return TryGetEntityCollection(path) ?? (Utils.ExtractCollectionName(path) is var first && first != path ? TryGetEntityCollection(first) : null);
+	}
+
+	private EntityCollection? TryGetEntityCollection(string path)
+	{
 		try
 		{
-			return Session.Metadata.GetEntityCollection(collectionName);
+			return Session.Metadata.GetEntityCollection(path);
 		}
-		catch (UnresolvableObjectException)
+		catch (Exception ex) when (ex is UnresolvableObjectException or InvalidOperationException or ArgumentException)
 		{
 			return null;
 		}

@@ -164,8 +164,7 @@ internal sealed class Session : ISession, IDisposable
 
 		if (!response.IsSuccessStatusCode)
 		{
-			var body = response.Content is null ? null : await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-			throw new HttpRequestException($"Unable to download metadata from {request.RequestUri}: {(int)response.StatusCode} {response.ReasonPhrase}. {body}", null, response.StatusCode);
+			throw await WebRequestException.CreateFromResponseMessageAsync(response, Settings.WebRequestExceptionMessageSource, null, cancellationToken).ConfigureAwait(false);
 		}
 
 		return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);

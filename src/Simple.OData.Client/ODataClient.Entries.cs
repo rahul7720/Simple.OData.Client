@@ -18,7 +18,7 @@ public sealed partial class ODataClient
 
 		await Session.InitializeAsync(cancellationToken).ConfigureAwait(false);
 		var request = await new RequestBuilder(commandText, this).GetRequestAsync(scalarResult: false).ConfigureAwait(false);
-		var response = await FindResponseAsync(request, null, annotations, cancellationToken).ConfigureAwait(false);
+		var response = await FindResponseAsync(request, TryResolveCollection(commandText), annotations, cancellationToken).ConfigureAwait(false);
 		return response?.AsEntries(IncludeAnnotations) ?? [];
 	}
 
@@ -33,7 +33,7 @@ public sealed partial class ODataClient
 
 		await Session.InitializeAsync(cancellationToken).ConfigureAwait(false);
 		var request = await new RequestBuilder(commandText, this).GetRequestAsync(scalarResult: false).ConfigureAwait(false);
-		var response = await FindResponseAsync(request, null, null, cancellationToken).ConfigureAwait(false);
+		var response = await FindResponseAsync(request, TryResolveCollection(commandText), null, cancellationToken).ConfigureAwait(false);
 		return response?.AsEntry(IncludeAnnotations);
 	}
 
@@ -200,7 +200,7 @@ public sealed partial class ODataClient
 		try
 		{
 			using var response = await Runner.ExecuteRequestAsync(request, cancellationToken).ConfigureAwait(false);
-			return await new ResponseReader(Session).ReadAsync(response, null, cancellationToken).ConfigureAwait(false);
+			return await new ResponseReader(Session).ReadAsync(response, TryResolveCollection(request.CommandText), cancellationToken).ConfigureAwait(false);
 		}
 		catch (WebRequestException ex) when (IsIgnoredNotFound(ex))
 		{

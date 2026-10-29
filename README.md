@@ -139,14 +139,14 @@ var products = await response.ReadAsCollectionAsync();
 
 | Area | Supported |
 |---|---|
-| Querying | `$filter` with every 4.01 built-in (string, date/time, arithmetic, `in`, `has`, `any`/`all`, `isof`/`cast`, geo and `case` through `ODataFunctions`), `$select`, nested `$expand` options, `$orderby`, `$top`, `$skip`, `$count`, `/$count`, `$search`, `$index`, `$compute`, `$apply`, `$format`, `$schemaversion` |
+| Querying | `$filter` with every 4.01 built-in (string, date/time, arithmetic, `in`, `has`, `any`/`all`, `isof`/`cast`, `matchesPattern`, `hassubset`/`hassubsequence` and geo functions through `ODataFunctions`), `$select`, nested `$expand` options, `$orderby`, `$top`, `$skip`, `$count`, `/$count`, `$search`, `$index`, `$compute`, `$apply`, `$schemaversion` |
 | Keys | single, compound, named, alternate keys, key-as-segment, filter-as-key |
 | Model | singletons, containment, derived types, open types, enums (flags), complex types and collections, media entities, stream properties |
 | Writing | POST with deep insert and `@odata.bind`, PATCH/PUT, DELETE, `$ref` links, `Prefer: return=representation|minimal`, `omit-values=nulls`, ETags (`If-Match`/`If-None-Match`, `Core.OptimisticConcurrency`), `$each` bulk operations |
 | Operations | bound and unbound functions and actions, imports, complex/collection/entity parameters, parameter aliases |
 | Batch | multipart and JSON batch, changesets and atomicity groups, `Content-ID` references, partial failures, `continue-on-error`, media in batches |
 | Protocol | server-driven paging, delta links and delta payloads, `respond-async` with status monitors, instance annotations, `odata.metadata=minimal|full|none`, `IEEE754Compatible`, OData error payloads |
-| Metadata | CSDL XML and CSDL JSON, vocabularies (Core, Capabilities, Community alternate keys), referenced models, a process-wide model cache |
+| Metadata | CSDL XML and CSDL JSON, the built-in vocabularies (Core, Capabilities, Community alternate keys) resolved through `edmx:Reference`, a process-wide model cache; supply `MetadataModel` yourself for services that reference external schemas |
 
 ## Settings
 

@@ -27,6 +27,28 @@ public class TypedExpressionTests
 	[Fact]
 	public void EqualString() => Format(x => x.ProductName == "Chai").Should().Be("ProductName eq 'Chai'");
 
+	private sealed class NameSource
+	{
+		public string GetName() => "Chai";
+
+		public string WithSuffix(string prefix) => prefix + "ai";
+	}
+
+	[Fact]
+	public void ClosureInstanceMethodCallIsEvaluated()
+	{
+		var source = new NameSource();
+		Format(x => x.ProductName == source.GetName()).Should().Be("ProductName eq 'Chai'");
+	}
+
+	[Fact]
+	public void ClosureMethodCallWithArgumentsIsEvaluated()
+	{
+		var source = new NameSource();
+		var prefix = "Ch";
+		Format(x => x.ProductName == source.WithSuffix(prefix).ToUpperInvariant()).Should().Be("ProductName eq 'CHAI'");
+	}
+
 	[Fact]
 	public void EqualFieldToString() => Format(x => x.ProductName!.ToString() == "Chai").Should().Be("ProductName eq 'Chai'");
 

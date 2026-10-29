@@ -77,6 +77,20 @@ public class SessionTests
 	}
 
 	[Fact]
+	public async Task FailedMetadataDownloadThrowsWebRequestException()
+	{
+		var handler = new FakeHttpHandler().Enqueue(HttpStatusCode.Unauthorized, """{"error":{"code":"401","message":"no token"}}""", "application/json");
+		var session = new Session(new ODataClientSettings(new HttpClient(handler)) { BaseUri = MetadataClientFactory.UniqueBaseUri("svc/") });
+
+		var act = () => session.InitializeAsync(CancellationToken.None).AsTask();
+		var exception = (await act.Should().ThrowAsync<WebRequestException>()).Which;
+		exception.Code.Should().Be(HttpStatusCode.Unauthorized);
+		exception.RequestUri!.AbsolutePath.Should().EndWith("/$metadata");
+		exception.Response.Should().Contain("no token");
+		session.IsInitialized.Should().BeFalse();
+	}
+
+	[Fact]
 	public async Task CancelledMetadataDownloadLeavesCacheEmpty()
 	{
 		var baseUri = MetadataClientFactory.UniqueBaseUri("svc/");
@@ -130,7 +144,7 @@ public class SessionTests
 		var session = new Session(new ODataClientSettings(new HttpClient(handler)) { BaseUri = baseUri });
 
 		var act = () => session.InitializeAsync(CancellationToken.None).AsTask();
-		await act.Should().ThrowAsync<HttpRequestException>();
+		(await act.Should().ThrowAsync<WebRequestException>()).Which.Code.Should().Be(HttpStatusCode.InternalServerError);
 
 		await session.InitializeAsync(CancellationToken.None);
 		handler.Requests.Should().HaveCount(2);

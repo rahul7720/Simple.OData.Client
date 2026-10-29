@@ -331,7 +331,8 @@ internal sealed class EdmMetadataIndex
 
 			return _resolver switch
 			{
-				ExactMatchResolver { AlphanumericComparison: false } => null,
+				ExactMatchResolver { AlphanumericComparison: false, Comparison: StringComparison.Ordinal } => null,
+				ExactMatchResolver { AlphanumericComparison: false } => _scanCache.GetOrAdd(name, Scan),
 				ExactMatchResolver => FindVariant(shortName.Homogenize(), strictFirst: false),
 				BestMatchResolver => FindBestMatch(shortName),
 				_ => _scanCache.GetOrAdd(name, Scan),

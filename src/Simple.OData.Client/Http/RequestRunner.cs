@@ -77,7 +77,8 @@ internal sealed class RequestRunner(Session session)
 			}
 		}
 
-		var prefer = PreferHeader.Compose(Settings, request);
+		var existing = headers.TryGetValues(HttpLiteral.Prefer, out var values) ? values.ToArray() : null;
+		var prefer = PreferHeader.Compose(Settings, request, existing);
 		headers.Remove(HttpLiteral.Prefer);
 		if (prefer is not null)
 		{

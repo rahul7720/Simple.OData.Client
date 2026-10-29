@@ -376,6 +376,29 @@ public sealed class ClientWithFakeHandlerTests
 	}
 
 	[Fact]
+	public async Task CustomPreferHeaderIsKeptAlongsideComposedPreferences()
+	{
+		var (client, handler) = Create();
+		handler.Enqueue(HttpStatusCode.OK, $$$"""{{{Context(client, "Products")}}},"value":[]}""");
+		await client.For<Product>().WithHeader("Prefer", "wait=10").WithMaxPageSize(5).FindEntriesAsync();
+		var prefer = string.Join(",", handler.LastRequest.Headers.GetValues("Prefer"));
+		prefer.Should().Contain("wait=10").And.Contain("odata.maxpagesize=5");
+	}
+
+	[Fact]
+	public async Task UntypedCommandTextReadsMetadataNonePayloads()
+	{
+		var (client, handler) = Create(s => s.MetadataLevel = ODataMetadataLevel.None);
+		handler.Enqueue(HttpStatusCode.OK, """{"value":[{"ProductID":1,"ProductName":"Chai"}]}""", "application/json;odata.metadata=none");
+		handler.Enqueue(HttpStatusCode.OK, """{"ProductID":1,"ProductName":"Chai"}""", "application/json;odata.metadata=none");
+
+		var products = await client.FindEntriesAsync("Products");
+		products.Should().ContainSingle().Which["ProductName"].Should().Be("Chai");
+		var product = await client.FindEntryAsync("Products(1)");
+		product!["ProductID"].Should().Be(1);
+	}
+
+	[Fact]
 	public async Task LinkAndUnlinkEntries()
 	{
 		var (client, handler) = Create();

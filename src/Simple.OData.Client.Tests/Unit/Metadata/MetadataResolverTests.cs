@@ -73,6 +73,18 @@ public class MetadataResolverTests
 	}
 
 	[Fact]
+	public void ExactMatchResolverHonoursItsStringComparison()
+	{
+		var ignoreCase = TestMetadata.Resolver("Northwind4.xml", new ExactMatchResolver(alphanumericComparison: false, StringComparison.OrdinalIgnoreCase));
+		ignoreCase.GetEntityCollectionExactName("products").Should().Be("Products");
+		ignoreCase.GetStructuralPropertyExactName("Products", "productname").Should().Be("ProductName");
+		ignoreCase.GetNavigationPropertyExactName("Products", "category").Should().Be("Category");
+
+		var ordinal = TestMetadata.Resolver("Northwind4.xml", new ExactMatchResolver());
+		ordinal.Invoking(x => x.GetEntityCollectionExactName("products")).Should().Throw<UnresolvableObjectException>();
+	}
+
+	[Fact]
 	public void GetAlternateKeyPropertyNamesFromJsonCsdlWithStringPropertyRefs()
 	{
 		// ASP.NET Core OData writes the PropertyRef Name as a plain string instead of a $PropertyPath
