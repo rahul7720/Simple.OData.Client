@@ -41,6 +41,8 @@ internal static class ODataLibSettings
 		return new ODataMessageReaderSettings
 		{
 			Version = Version(session),
+			// the client advertises OData-MaxVersion: 4.01, so a 4.01 response (with prefix-less control information) must be readable
+			MaxProtocolVersion = ODataVersion.V401,
 			BaseUri = session.BaseUri,
 			Validations = ToODataLib(session.Settings.Validations),
 			EnableMessageStreamDisposal = false,

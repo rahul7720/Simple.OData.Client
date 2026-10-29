@@ -32,6 +32,18 @@ public sealed class ResponseReaderTests
 	}
 
 	[Fact]
+	public async Task ReadsFourOhOneResponseWithShortControlInformation()
+	{
+		// a 4.01 service answers OData-MaxVersion: 4.01 with OData-Version: 4.01 and prefix-less control information
+		var body = $$$"""{"@context":"{{{Northwind.BaseUri}}}$metadata#Products","@count":2,"value":[{"@etag":"W/\"1\"","ProductID":1,"ProductName":"Chai"},{"@etag":"W/\"2\"","ProductID":2,"ProductName":"Chang"}]}""";
+		var response = await ReadAsync(Northwind, Json(body, headers: new Dictionary<string, string> { ["OData-Version"] = "4.01" }));
+		var entries = response.AsEntries(false);
+		entries.Should().HaveCount(2);
+		entries[1]["ProductName"].Should().Be("Chang");
+		response.Feed!.Annotations!.Count.Should().Be(2);
+	}
+
+	[Fact]
 	public async Task ReadsSingleEntryWithAnnotationsAndEtagHeader()
 	{
 		var body = $$$"""{{{Open(Northwind, "Products/$entity")}}},"@odata.etag":"W/\"1\"","ProductID":1,"ProductName":"Chai","UnitPrice":18.5}""";

@@ -4,5 +4,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="Simple.OData.Client.Tests/Simple.OData.Client.Tests.csproj" />
+    <Project Path="Simple.OData.Client.Tests.TestServer/Simple.OData.Client.Tests.TestServer.csproj" />
   </Folder>
 </Solution>
