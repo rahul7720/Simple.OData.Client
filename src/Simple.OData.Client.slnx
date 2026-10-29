@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Simple.OData.Client/Simple.OData.Client.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Simple.OData.Client.Tests/Simple.OData.Client.Tests.csproj" />
+    <Project Path="Simple.OData.Client.Tests.TestServer/Simple.OData.Client.Tests.TestServer.csproj" />
+    <Project Path="Simple.OData.Client.Tests.Integration/Simple.OData.Client.Tests.Integration.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="Simple.OData.Client.Benchmarks/Simple.OData.Client.Benchmarks.csproj" />
+  </Folder>
+</Solution>

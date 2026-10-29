@@ -40,3 +40,8 @@ nuget.exe
 /paket-files
 /.paket/paket.exe
 /.paket/Paket.Restore.targets
+
+# .NET 10 modernization
+BenchmarkDotNet.Artifacts/
+*.received.*
+.superpowers/

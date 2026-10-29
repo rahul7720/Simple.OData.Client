@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>Simple.OData.Client.Benchmarks</RootNamespace>
+		<NoWarn>$(NoWarn);CA1515;CA1024;CA1848;CA1310;CA1866;CS8618</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Simple.OData.Client\Simple.OData.Client.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BenchmarkDotNet" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\**\*" LogicalName="%(Filename)%(Extension)" />
+	</ItemGroup>
+
+</Project>

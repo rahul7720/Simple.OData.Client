@@ -1,51 +1,131 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+name: Release
 
-name: Release Build & Package
+# Builds, tests and packs the solution in Release, creates the GitHub release for the version in
+# src/Simple.OData.Client/Simple.OData.Client.csproj with the .nupkg and .snupkg attached, and publishes
+# the package to GitHub Packages (nuget.pkg.github.com/<owner>).
+#
+# - Run it manually (workflow_dispatch) on the branch to release: the release is created for the commit
+#   that ran, and the v<version> tag is created at that commit if it does not exist yet.
+# - Or push a v<version> tag: the tag must match <Version> in the project file.
+# Packages are pushed to nuget.org only when the manual run opts in and NUGET_API_KEY is set.
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "releases/*" ]
+    tags: [ "v*" ]
+  workflow_dispatch:
+    inputs:
+      recreate_release:
+        description: "If the release and tag already exist, delete them and recreate them at this commit"
+        required: false
+        type: boolean
+        default: false
+      publish_to_nuget:
+        description: "Also push the package to nuget.org (requires the NUGET_API_KEY secret)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  build:
-
-    runs-on: windows-latest
+  release:
+    runs-on: ubuntu-latest
 
     steps:
-
-    - name: Get Current Time
-      id: build_date
-      run: |
-          $CurrentDateTime = Get-Date -Format "yyyyMMdd-HHmmss"
-          echo "::set-output name=date::$CurrentDateTime"
-          echo "$CurrentDateTime"
-
     - uses: actions/checkout@v4
-  
+
+    - name: Resolve the version
+      id: version
+      run: |
+        VERSION=$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/Simple.OData.Client/Simple.OData.Client.csproj)
+        PACKAGE_ID=$(sed -n 's:.*<PackageId>\(.*\)</PackageId>.*:\1:p' src/Simple.OData.Client/Simple.OData.Client.csproj)
+        TAG="v$VERSION"
+        if [ -z "$VERSION" ] || [ -z "$PACKAGE_ID" ]; then
+          echo "::error::No <Version> or <PackageId> found in Simple.OData.Client.csproj"
+          exit 1
+        fi
+        if [ "$GITHUB_REF_TYPE" = "tag" ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
+          echo "::error::Tag $GITHUB_REF_NAME does not match <Version>$VERSION</Version> in Simple.OData.Client.csproj"
+          exit 1
+        fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "package_id=$PACKAGE_ID" >> "$GITHUB_OUTPUT"
+        echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.x
+        dotnet-version: 10.0.x
 
-    - name: Restore Dependencies
-      run: dotnet restore "src/Simple.OData.Client.sln"
+    - name: Restore
+      run: dotnet restore src/Simple.OData.Client.slnx
 
     - name: Build
-      run: dotnet build "src/Simple.OData.Client.sln" --no-restore --configuration Release --verbosity minimal
+      run: dotnet build src/Simple.OData.Client.slnx --no-restore --configuration Release
 
     - name: Test
-      run: dotnet test "src/Simple.OData.Client.sln" --no-build --configuration Release --verbosity minimal
+      run: dotnet test src/Simple.OData.Client.slnx --no-build --configuration Release
 
-    # - name: Create NuGet Packages
-    #   run: dotnet pack src/Simple.OData.Client.sln --no-build --output packages /p:Configuration=release /p:Version="${{ vars.RELEASE_VERSION_MAJORMINOR }}"
+    - name: Pack
+      run: dotnet pack src/Simple.OData.Client/Simple.OData.Client.csproj --no-build --configuration Release --output packages
 
-    # - name: Upload Artifacts
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: nuget-packages
-    #     path: packages
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages
+
+    - name: Collect release notes
+      env:
+        TAG: ${{ steps.version.outputs.tag }}
+      run: |
+        if [ -f "docs/releases/$TAG.md" ]; then
+          cp "docs/releases/$TAG.md" release-notes.md
+        else
+          awk '/^#### /{ section++ } section == 1' RELEASE_NOTES.md > release-notes.md
+        fi
+        cat release-notes.md
+
+    - name: Create the GitHub release
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAG: ${{ steps.version.outputs.tag }}
+        VERSION: ${{ steps.version.outputs.version }}
+        PACKAGE_ID: ${{ steps.version.outputs.package_id }}
+        RECREATE: ${{ github.event_name == 'workflow_dispatch' && inputs.recreate_release }}
+      run: |
+        if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if [ "$RECREATE" = "true" ]; then
+            echo "Release $TAG exists; deleting it and its tag so they can be recreated at $GITHUB_SHA"
+            gh release delete "$TAG" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
+          else
+            echo "::error::Release $TAG already exists. Re-run with recreate_release to replace it."
+            exit 1
+          fi
+        fi
+        gh release create "$TAG" packages/*.nupkg packages/*.snupkg \
+          --repo "$GITHUB_REPOSITORY" \
+          --target "$GITHUB_SHA" \
+          --title "$PACKAGE_ID $VERSION" \
+          --notes-file release-notes.md
+
+    - name: Publish to GitHub Packages
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        dotnet nuget push "packages/*.nupkg" --no-symbols --skip-duplicate \
+          --source "https://nuget.pkg.github.com/$GITHUB_REPOSITORY_OWNER/index.json" \
+          --api-key "$GITHUB_TOKEN"
 
     - name: Push to NuGet
-      run: dotnet nuget push "**/*.nupkg" --skip-duplicate --no-service-endpoint -s "https://api.nuget.org/v3/index.json" -k ${{ secrets.NUGET_API_KEY }}
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_to_nuget }}
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        if [ -z "$NUGET_API_KEY" ]; then
+          echo "::error::publish_to_nuget was requested but the NUGET_API_KEY secret is not set"
+          exit 1
+        fi
+        dotnet nuget push "packages/*.nupkg" --skip-duplicate --source https://api.nuget.org/v3/index.json --api-key "$NUGET_API_KEY"

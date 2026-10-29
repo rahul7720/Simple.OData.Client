@@ -1,0 +1,24 @@
+{
+  "$Version": "4.0",
+  "$EntityContainer": "NorthwindModel.NorthwindEntities",
+  "NorthwindModel": {
+    "Product": {
+      "$Kind": "EntityType",
+      "$Key": [ "ProductID" ],
+      "ProductID": { "$Type": "Edm.Int32" },
+      "ProductName": {},
+      "@OData.Community.Keys.V1.AlternateKeys": [
+        {
+          "@type": "OData.Community.Keys.V1.AlternateKey",
+          "Key": [
+            { "@type": "OData.Community.Keys.V1.PropertyRef", "Alias": "ProductName", "Name": "ProductName" }
+          ]
+        }
+      ]
+    },
+    "NorthwindEntities": {
+      "$Kind": "EntityContainer",
+      "Products": { "$Collection": true, "$Type": "NorthwindModel.Product" }
+    }
+  }
+}

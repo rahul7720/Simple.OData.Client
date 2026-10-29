@@ -1,35 +1,41 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>net8.0;net7.0;netstandard2.0</TargetFrameworks>
-		<DocumentationFile>$(DocumentationFile)\$(AssemblyName).xml</DocumentationFile>
-		<StrongNamePublicKey>$(StrongNamePublicKey)</StrongNamePublicKey>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<Summary>Simple.OData.Client helps you interact with OData APIs that comply with any version of the OData standard.</Summary>
+		<RootNamespace>Simple.OData.Client</RootNamespace>
+		<AssemblyName>Simple.OData.Client</AssemblyName>
+		<PackageId>Nexus.Odata.Client</PackageId>
+		<Version>7.0.0</Version>
+		<Title>Nexus.Odata.Client</Title>
+		<Summary>A metadata-driven OData V4 / V4.01 client for .NET 10 that needs no generated proxy classes.</Summary>
 		<Description>
-			$(Summary) Modern APIs will likely want to use the Simple.OData.V4.Client package, which has a smaller memory footprint and is optimized for OData V4.
+			Simple.OData.Client is a metadata-driven OData V4 and V4.01 client for .NET 10. It reads the service metadata
+			and lets you query and modify OData services through a fluent, typed, dictionary-based or dynamic API without
+			generating proxy classes. Supports $filter/$select/$expand/$orderby/$search/$compute/$apply, server-driven
+			paging, delta queries, batch (multipart and JSON), functions and actions, media streams, ETags and
+			asynchronous requests.
 
 			Commonly used types:
 			Simple.OData.Client.ODataClient
+			Simple.OData.Client.ODataClientSettings
+			Simple.OData.Client.ODataBatch
 		</Description>
-		<PackageTags>$(PackageTags);v3;v4;</PackageTags>
-		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<IncludeSymbols>false</IncludeSymbols>
+		<PackageReleaseNotes>See https://github.com/rahul7720/Simple.OData.Client/releases</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Simple.OData.Client.Core\Simple.OData.Client.Core.csproj" />
-		<ProjectReference Include="..\Simple.OData.Client.V3.Adapter\Simple.OData.Client.V3.Adapter.csproj" />
-		<ProjectReference Include="..\Simple.OData.Client.V4.Adapter\Simple.OData.Client.V4.Adapter.csproj" />
+		<PackageReference Include="Microsoft.OData.Core" />
+		<PackageReference Include="Microsoft.OData.Edm" />
+		<PackageReference Include="Microsoft.Spatial" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
+		<InternalsVisibleTo Include="Simple.OData.Client.Tests" Key="$(StrongNamePublicKey.Replace('PublicKey=', ''))" />
+		<InternalsVisibleTo Include="Simple.OData.Client.Benchmarks" Key="$(StrongNamePublicKey.Replace('PublicKey=', ''))" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
 </Project>

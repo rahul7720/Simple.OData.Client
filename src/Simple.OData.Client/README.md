@@ -1,19 +1,23 @@
-# Simple.OData.Client - The Best OData Client for .NET
-[Releases](https://github.com/simple-odata-client/Simple.OData.Client/releases)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentation](https://github.com/simple-odata-client/Simple.OData.Client/wiki)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[OData v4.01 Documentation](https://www.odata.org/documentation/)
+# Simple.OData.Client
 
-## Simple.OData.Client (Complete Package)
+A metadata-driven OData V4 / V4.01 client for .NET 10. Work with any OData service through dictionaries, your own
+POCOs or dynamic expressions; no code generation required.
 
-This package contains the complete Simple.OData.Client solution, encompassing all versions of the OData specification.
+```csharp
+var client = new ODataClient(new Uri("https://services.odata.org/V4/Northwind/Northwind.svc/"));
 
-Most modern OData APIs will want to use the [Simple.OData.V4.Client package](https://www.nuget.org/packages/Simple.OData.V4.Client), which has a lighter memory footprint. If you only need to support OData v3 and earlier, you can use the [Simple.OData.V3.Client package](https://www.nuget.org/packages/Simple.OData.V3.Client).
+var products = await client.For<Product>()
+    .Filter(x => x.UnitPrice > 50)
+    .Expand(x => x.Category)
+    .OrderByDescending(x => x.UnitPrice)
+    .Top(5)
+    .FindEntriesAsync();
 
-## Supported Platforms
-This library supports all of the .NET runtimes Microsoft supports as of March 2024. This includes:
-- .NET 8.0
-- .NET 7.0
-- .NET Standard 2.0 (for .NET Framework 4.6.1 and later => .NET Core)
+var created = await client.For("Products").Set(new { ProductName = "Tea", UnitPrice = 4.5m }).InsertEntryAsync();
+```
 
-## Need Help?
-- [Read the Documentation](https://github.com/simple-odata-client/Simple.OData.Client/wiki)
-- [Check out the Discussions](https://github.com/simple-odata-client/Simple.OData.Client/discussions)
-- [Open an Issue](https://github.com/simple-odata-client/Simple.OData.Client/issues)
+Supports the full OData 4.01 surface: `$compute`, `$apply`, `$each`, delta links, multipart and JSON batches,
+`respond-async`, server-driven paging, key-as-segment, CSDL XML and JSON metadata, media streams and more.
+
+Documentation, feature list, settings and migration notes from 6.x:
+https://github.com/simple-odata-client/Simple.OData.Client#readme

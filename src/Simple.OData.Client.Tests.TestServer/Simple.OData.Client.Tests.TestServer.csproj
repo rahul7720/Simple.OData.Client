@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<RootNamespace>Simple.OData.Client.Tests.TestServer</RootNamespace>
+		<NoWarn>$(NoWarn);CA1002;CA1024;CA1515;CA1721;CA1819;CA1834;CA1848;CA2227;CA5351;NU1603;NU1608</NoWarn>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.OData" />
+		<PackageReference Include="Microsoft.OData.ModelBuilder" />
+		<PackageReference Include="Microsoft.OData.Core" />
+		<PackageReference Include="Microsoft.OData.Edm" />
+		<PackageReference Include="Microsoft.Spatial" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" />
+	</ItemGroup>
+
+</Project>
