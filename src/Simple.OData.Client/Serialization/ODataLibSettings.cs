@@ -1,4 +1,6 @@
+using System.Buffers;
 using Microsoft.OData;
+using Microsoft.OData.Buffers;
 
 namespace Simple.OData.Client.Serialization;
 
@@ -43,7 +45,17 @@ internal static class ODataLibSettings
 			BaseUri = session.BaseUri,
 			Validations = ToODataLib(session.Settings.Validations),
 			EnableMessageStreamDisposal = false,
+			EnableReadingODataAnnotationWithoutPrefix = true,
+			EnableReadingKeyAsSegment = session.Settings.KeyAsSegment,
 			ShouldIncludeAnnotation = session.Settings.IncludeAnnotationsInResults ? ODataUtils.CreateAnnotationFilter("*") : null,
+			ArrayPool = SharedCharArrayPool.Instance,
+			MessageQuotas = new ODataMessageQuotas
+			{
+				MaxReceivedMessageSize = long.MaxValue,
+				MaxPartsPerBatch = 10_000,
+				MaxOperationsPerChangeset = 10_000,
+				MaxNestingDepth = 200,
+			},
 		};
 	}
 
@@ -71,5 +83,15 @@ internal static class ODataLibSettings
 		}
 
 		return result;
+	}
+
+	/// <summary>Lets ODataLib rent character buffers from the shared array pool.</summary>
+	private sealed class SharedCharArrayPool : ICharArrayPool
+	{
+		public static SharedCharArrayPool Instance { get; } = new();
+
+		public char[] Rent(int minSize) => ArrayPool<char>.Shared.Rent(minSize);
+
+		public void Return(char[] array) => ArrayPool<char>.Shared.Return(array);
 	}
 }
